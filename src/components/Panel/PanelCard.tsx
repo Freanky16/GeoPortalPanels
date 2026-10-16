@@ -58,6 +58,12 @@ export default function PanelCard() {
             <span className={styles.label}>Dirección</span>
             <span className={styles.value}>{mostrarDato(panel.direccion)}</span>
           </div>
+          {panel.tipoVia && (
+            <div className={styles.row}>
+              <span className={styles.label}>Tipo de Vía</span>
+              <span className={styles.value}>{panel.tipoVia}</span>
+            </div>
+          )}
           <div className={styles.row}>
             <span className={styles.label}>Espacio</span>
             <span className={styles.value}>{mostrarDato(panel.espacioPublicitario)}</span>
@@ -151,38 +157,88 @@ export default function PanelCard() {
 
         <div className={styles.divider} />
 
-        {/* Sección: Características */}
+        {/* Sección: Características Técnicas y Dimensiones */}
         <div className={styles.section}>
           <div className={styles.row}>
             <span className={styles.label}>Tipo de Panel</span>
             <span className={styles.value}>{mostrarDato(panel.tipoEPE)}</span>
           </div>
+          {panel.materialPredominante && (
+            <div className={styles.row}>
+              <span className={styles.label}>Material</span>
+              <span className={styles.value}>{panel.materialPredominante}</span>
+            </div>
+          )}
           <div className={styles.row}>
             <span className={styles.label}>Iluminación</span>
             <span className={styles.value}>{mostrarDato(panel.caracteristicaTecnica)}</span>
           </div>
           <div className={styles.row}>
-            <span className={styles.label}>Medidas (Área)</span>
-            <span className={styles.value}>{mostrarDato(panel.areaExhibicion, 'm²')}</span>
+            <span className={styles.label}>Área de Exhibición</span>
+            <span className={styles.value} style={{ fontWeight: 800, color: 'var(--text-primary)' }}>
+              {mostrarDato(panel.areaExhibicion, ' m²')}
+            </span>
           </div>
+
+          {/* Dimensiones físicas secundarias (Alto × Largo | Altura Poste | Espesor) */}
+          {(panel.alto != null || panel.largo != null || panel.alturaPoste != null || panel.espesor != null) && (
+            <div className={styles.dimensionsBox}>
+              <div className={styles.dimensionsLabel}>Dimensiones Técnicas</div>
+              <div className={styles.dimensionsGrid}>
+                {panel.alto != null && panel.largo != null ? (
+                  <span className={styles.dimChip}>Cara: {panel.alto}m (alto) × {panel.largo}m (largo)</span>
+                ) : (
+                  <>
+                    {panel.alto != null && <span className={styles.dimChip}>Alto: {panel.alto} m</span>}
+                    {panel.largo != null && <span className={styles.dimChip}>Largo: {panel.largo} m</span>}
+                  </>
+                )}
+                {panel.alturaPoste != null && <span className={styles.dimChip}>Poste: {panel.alturaPoste} m</span>}
+                {panel.espesor != null && <span className={styles.dimChip}>Espesor: {panel.espesor} m</span>}
+              </div>
+            </div>
+          )}
+
+          {panel.areaOcupacion != null && (
+            <div className={styles.row}>
+              <span className={styles.label} title="Huella física en el suelo (zapata de concreto/berma)">
+                Área Ocupación (suelo)
+              </span>
+              <span className={styles.value}>{mostrarDato(panel.areaOcupacion, ' m²')}</span>
+            </div>
+          )}
         </div>
 
         <div className={styles.divider} />
 
-        {/* Sección: Contrato */}
+        {/* Sección: Contrato y Concesión */}
         <div className={styles.section}>
           <div className={styles.row}>
             <span className={styles.label}>Empresa</span>
-            <span className={styles.value} style={{ color: 'var(--accent)' }}>
+            <span className={styles.value} style={{ color: 'var(--accent)', fontWeight: 600 }}>
               {mostrarDato(panel.empresa)}
             </span>
           </div>
+          {panel.numeroContrato && (
+            <div className={styles.row}>
+              <span className={styles.label}>N° Contrato</span>
+              <span className={styles.value} style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                {panel.numeroContrato}
+              </span>
+            </div>
+          )}
           <div className={styles.row}>
             <span className={styles.label}>Estado</span>
             <span className={`${styles.statusTag} ${styles[claseEstado(panel.estadoContrato)]}`}>
               {ESTADO_LABELS[panel.estadoContrato]}
             </span>
           </div>
+          {panel.fechaSuscripcion && (
+            <div className={styles.row}>
+              <span className={styles.label}>Suscripción</span>
+              <span className={styles.value}>{formatearFecha(panel.fechaSuscripcion)}</span>
+            </div>
+          )}
           <div className={styles.row}>
             <span className={styles.label}>Vencimiento</span>
             <span className={styles.value}>{formatearFecha(panel.fechaVencimiento)}</span>

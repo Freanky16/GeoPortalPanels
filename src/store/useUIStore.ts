@@ -23,6 +23,9 @@ interface UIStore {
   mostrarRadio100m: boolean;
   toggleRadio100m: () => void;
   setMostrarRadio100m: (val: boolean) => void;
+  mostrarTodosRadios100m: boolean;
+  toggleTodosRadios100m: () => void;
+  setMostrarTodosRadios100m: (val: boolean) => void;
   leyendaAbierta: boolean;
   toggleLeyenda: () => void;
   setLeyendaAbierta: (val: boolean) => void;
@@ -49,12 +52,17 @@ export const useUIStore = create<UIStore>((set) => ({
   mapViewState: { center: [-77.0428, -12.0464], zoom: 12 },
   flyToTarget: null,
   mostrarRadio100m: false,
+  mostrarTodosRadios100m: false,
   leyendaAbierta: false,
 
   toggleRadio100m: () =>
     set((state) => ({ mostrarRadio100m: !state.mostrarRadio100m })),
   setMostrarRadio100m: (val) =>
     set({ mostrarRadio100m: val }),
+  toggleTodosRadios100m: () =>
+    set((state) => ({ mostrarTodosRadios100m: !state.mostrarTodosRadios100m })),
+  setMostrarTodosRadios100m: (val) =>
+    set({ mostrarTodosRadios100m: val }),
   toggleLeyenda: () =>
     set((state) => ({ leyendaAbierta: !state.leyendaAbierta })),
   setLeyendaAbierta: (val) =>

@@ -23,8 +23,9 @@
 .brandSection {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   user-select: none;
+  flex-shrink: 0;
 }
 
 .emblemWrapper {
@@ -37,6 +38,7 @@
   border: 1px solid #BFDBFE;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(26, 115, 232, 0.1);
+  flex-shrink: 0;
 }
 
 .brandText {
@@ -45,12 +47,13 @@
 }
 
 .entityName {
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #5F6368;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 .systemTitle {
@@ -61,6 +64,12 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
+}
+
+.titleMain {
+  font-weight: 800;
+  color: #0F172A;
 }
 
 .sigpeTag {
@@ -77,12 +86,6 @@
   color: #5F6368;
   font-weight: 500;
   font-size: 12px;
-}
-
-@media (max-width: 900px) {
-  .subtitle {
-    display: none;
-  }
 }
 
 /* Search Omnibox */
@@ -202,14 +205,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 /* Live Status Badge */
 .statusBadge {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 11px;
+  gap: 6px;
+  padding: 5px 10px;
   background: #E6F4EA;
   border: 1px solid #CEEAD6;
   border-radius: 20px;
@@ -217,6 +221,7 @@
   font-weight: 700;
   color: #137333;
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .pulseDot {
@@ -226,6 +231,7 @@
   border-radius: 50%;
   box-shadow: 0 0 6px #1E8E3E;
   animation: pulse 2s infinite;
+  flex-shrink: 0;
 }
 
 @keyframes pulse {
@@ -237,7 +243,7 @@
 /* Header Buttons */
 .headerBtn {
   height: 36px;
-  padding: 0 13px;
+  padding: 0 12px;
   background: #FFFFFF;
   border: 1px solid #DADCE0;
   border-radius: 8px;
@@ -252,6 +258,7 @@
   transition: all 0.2s ease;
   user-select: none;
   box-shadow: 0 1px 2px rgba(60, 64, 67, 0.05);
+  white-space: nowrap;
 }
 
 .headerBtn:hover {
@@ -273,6 +280,7 @@
   height: 36px;
   padding: 0;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 /* Menu Dropdown */
@@ -280,7 +288,7 @@
   position: absolute;
   top: calc(100% + 8px);
   right: 16px;
-  min-width: 230px;
+  min-width: 250px;
   background: #FFFFFF;
   border: 1px solid #DADCE0;
   border-radius: 10px;
@@ -323,8 +331,164 @@
   color: #1A73E8;
 }
 
+.dropdownItemActive {
+  background: #EFF6FF;
+  color: #1A73E8;
+  border: 1px solid #BFDBFE;
+}
+
 .dropdownDivider {
   height: 1px;
   background: #E8EAED;
   margin: 4px 6px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   RESPONSIVE DESIGN (Escritorio, Tablets, Móviles)
+   ───────────────────────────────────────────────────────────── */
+
+@media (min-width: 769px) {
+  .mobileSearchTrigger {
+    display: none !important;
+  }
+  .mobileBackBtn {
+    display: none !important;
+  }
+  .statusTextCompact {
+    display: none !important;
+  }
+  .statusTextFull {
+    display: inline !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .subtitle {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .headerContainer {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    height: 50px;
+    padding: 0 10px;
+    gap: 8px;
+    border-radius: 10px;
+  }
+
+  .entityName {
+    display: none;
+  }
+
+  .subtitle {
+    display: none;
+  }
+
+  /* El buscador regular se oculta en móvil para dar espacio */
+  .searchSection {
+    display: none;
+  }
+
+  /* Cuando se activa la búsqueda móvil, ocupa toda la barra limpiamente */
+  .searchSection.mobileSearchActive {
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: none;
+    background: #FFFFFF;
+    border-radius: 10px;
+    align-items: center;
+    padding: 0 8px;
+    z-index: 150;
+    gap: 8px;
+  }
+
+  .mobileBackBtn {
+    background: transparent;
+    border: none;
+    color: #5F6368;
+    padding: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+  }
+
+  .mobileBackBtn:hover {
+    background: #F1F3F4;
+  }
+
+  .hideOnMobileSearch {
+    display: none !important;
+  }
+
+  .mobileSearchTrigger {
+    display: flex !important;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .statusTextFull {
+    display: none !important;
+  }
+
+  .statusTextCompact {
+    display: inline !important;
+  }
+
+  .headerBtn {
+    height: 38px;
+    padding: 0 10px;
+  }
+
+  .iconBtn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .toolsDropdown {
+    right: 8px;
+    min-width: 230px;
+  }
+}
+
+@media (max-width: 480px) {
+  .headerContainer {
+    padding: 0 6px;
+    gap: 6px;
+  }
+
+  .btnLabel {
+    display: none;
+  }
+
+  .headerBtn {
+    padding: 0 8px;
+    gap: 4px;
+  }
+
+  .statusBadge {
+    padding: 4px 7px;
+    font-size: 10.5px;
+    gap: 4px;
+  }
+
+  .brandSection {
+    gap: 6px;
+  }
+
+  .emblemWrapper {
+    width: 30px;
+    height: 30px;
+  }
 }

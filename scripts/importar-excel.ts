@@ -378,8 +378,15 @@ async function importarExcel(): Promise<void> {
       filaValida = false;
     }
 
+    // Normalizar variaciones de distritos de Lima
+    let distritoParaBuscar = rawDistrito;
+    const distNorm = normalizar(rawDistrito);
+    if (distNorm === 'ATE VITARTE') distritoParaBuscar = 'ATE';
+    else if (distNorm === 'MAGDALENA') distritoParaBuscar = 'MAGDALENA DEL MAR';
+    else if (distNorm === 'SANTA MARIA') distritoParaBuscar = 'SANTA MARIA DEL MAR';
+
     // Distrito: obligatorio y debe existir en la BD
-    const distritoId = buscarEnMapa(mapDistritos, rawDistrito);
+    const distritoId = buscarEnMapa(mapDistritos, distritoParaBuscar);
 
     if (!rawDistrito) {
       errores.push({

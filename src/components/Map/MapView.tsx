@@ -26,6 +26,11 @@ const RADIO_BUFFER_SOURCE_ID = 'radio-buffer-source';
 const RADIO_BUFFER_FILL_LAYER = 'radio-buffer-fill';
 const RADIO_BUFFER_LINE_LAYER = 'radio-buffer-line';
 
+// Auditoría Global de Proximidad 100m (Todos los paneles)
+const RADIO_ALL_BUFFER_SOURCE_ID = 'radio-all-buffer-source';
+const RADIO_ALL_BUFFER_FILL_LAYER = 'radio-all-buffer-fill';
+const RADIO_ALL_BUFFER_LINE_LAYER = 'radio-all-buffer-line';
+
 /**
  * Genera un polígono GeoJSON circular con radio en metros
  */
@@ -60,6 +65,43 @@ function createGeoJSONCircle(center: [number, number], radiusInMeters: number, p
   };
 }
 
+/**
+ * Genera polígonos GeoJSON circulares de 100m geodésicos para múltiples paneles
+ */
+function createGeoJSONCircles(centers: [number, number][], radiusInMeters: number, points = 32): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = centers.map((center, idx) => {
+    const coords: [number, number][] = [];
+    const [lng, lat] = center;
+    const latRad = (lat * Math.PI) / 180;
+    const dLat = (radiusInMeters / 6371000) * (180 / Math.PI);
+    const dLng = dLat / Math.cos(latRad);
+
+    for (let i = 0; i <= points; i++) {
+      const angle = (i * 2 * Math.PI) / points;
+      const pLng = lng + dLng * Math.cos(angle);
+      const pLat = lat + dLat * Math.sin(angle);
+      coords.push([pLng, pLat]);
+    }
+
+    return {
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [coords],
+      },
+      properties: {
+        id: idx,
+        radio: radiusInMeters,
+      },
+    };
+  });
+
+  return {
+    type: 'FeatureCollection',
+    features,
+  };
+}
+
 export default function MapView() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -74,6 +116,7 @@ export default function MapView() {
   const clearFlyTo = useUIStore((state) => state.clearFlyTo);
   const setMapViewState = useUIStore((state) => state.setMapViewState);
   const mostrarRadio100m = useUIStore((state) => state.mostrarRadio100m);
+  const mostrarTodosRadios100m = useUIStore((state) => state.mostrarTodosRadios100m);
   const panelSeleccionado = usePanelStore((state) => state.panelSeleccionado);
   const seleccionarPanel = usePanelStore((state) => state.seleccionarPanel);
 
@@ -259,6 +302,46 @@ export default function MapView() {
           },
         },
         PANELES_HALO_LAYER
+      );
+    }
+
+    // 8. Capa y fuente: Auditoría Global de 100 metros (Todos los paneles visibles)
+    if (!mapInstance.getSource(RADIO_ALL_BUFFER_SOURCE_ID)) {
+      mapInstance.addSource(RADIO_ALL_BUFFER_SOURCE_ID, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+    }
+
+    if (!mapInstance.getLayer(RADIO_ALL_BUFFER_FILL_LAYER)) {
+      mapInstance.addLayer(
+        {
+          id: RADIO_ALL_BUFFER_FILL_LAYER,
+          type: 'fill',
+          source: RADIO_ALL_BUFFER_SOURCE_ID,
+          paint: {
+            'fill-color': '#2563EB',
+            'fill-opacity': 0.14,
+          },
+        },
+        RADIO_BUFFER_FILL_LAYER
+      );
+    }
+
+    if (!mapInstance.getLayer(RADIO_ALL_BUFFER_LINE_LAYER)) {
+      mapInstance.addLayer(
+        {
+          id: RADIO_ALL_BUFFER_LINE_LAYER,
+          type: 'line',
+          source: RADIO_ALL_BUFFER_SOURCE_ID,
+          paint: {
+            'line-color': '#3B82F6',
+            'line-width': 1.6,
+            'line-dasharray': [2, 2],
+            'line-opacity': 0.75,
+          },
+        },
+        RADIO_BUFFER_FILL_LAYER
       );
     }
   }, []);
@@ -514,6 +597,21 @@ export default function MapView() {
       source.setData({ type: 'FeatureCollection', features: [] });
     }
   }, [mostrarRadio100m, panelSeleccionado, mapReady]);
+
+  // 6.5. Auditoría Global de Proximidad 100m (Todos los paneles visibles)
+  useEffect(() => {
+    if (!mapReady || !map.current) return;
+    const source = map.current.getSource(RADIO_ALL_BUFFER_SOURCE_ID) as maplibregl.GeoJSONSource;
+    if (!source) return;
+
+    if (mostrarTodosRadios100m && panelesFiltrados.length > 0) {
+      const centers = panelesFiltrados.map((p) => [p.longitud, p.latitud] as [number, number]);
+      const circlesData = createGeoJSONCircles(centers, 100);
+      source.setData(circlesData);
+    } else {
+      source.setData({ type: 'FeatureCollection', features: [] });
+    }
+  }, [mostrarTodosRadios100m, panelesFiltrados, mapReady]);
 
   return (
     <div className={styles.mapWrapper}>

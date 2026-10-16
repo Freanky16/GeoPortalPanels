@@ -14,6 +14,7 @@ export default function InstitutionalHeader() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
 
   // Stores
@@ -27,6 +28,8 @@ export default function InstitutionalHeader() {
   const dashboardAbierto = useUIStore((state) => state.dashboardAbierto);
   const toggleDashboard = useUIStore((state) => state.toggleDashboard);
   const flyTo = useUIStore((state) => state.flyTo);
+  const mostrarTodosRadios100m = useUIStore((state) => state.mostrarTodosRadios100m);
+  const toggleTodosRadios100m = useUIStore((state) => state.toggleTodosRadios100m);
 
   const panelesFiltrados = useFilteredPanels();
   const activeFiltersCount = useFilterStore((state) => state.cantidadFiltrosActivos());
@@ -64,31 +67,42 @@ export default function InstitutionalHeader() {
     flyTo([panel.longitud, panel.latitud], 17);
     setShowSuggestions(false);
     setSearchQuery('');
+    setMobileSearchOpen(false);
   };
 
-  // Exportar paneles filtrados a Microsoft Excel (.XLSX) profesional con columnas y anchos reales
+  // Exportar paneles filtrados a Microsoft Excel (.XLSX) con las 22 columnas oficiales
   const handleExportExcel = () => {
     if (!panelesFiltrados.length) return;
 
     const rows = panelesFiltrados.map((p, index) => ({
-      'N°': index + 1,
+      'N°': p.numeroFila ?? (index + 1),
       'Código': p.codigo,
       'Distrito': p.distrito || 'Sin dato',
       'Dirección': p.direccion || 'Sin dato',
       'Empresa': p.empresa || 'Sin dato',
       'Tipo EPE': p.tipoEPE || 'Sin dato',
-      'Material': p.materialPredominante || 'Sin dato',
+      'Material Predominante': p.materialPredominante || 'Sin dato',
+      'Características Técnicas': p.caracteristicaTecnica || 'Sin dato',
+      'Tipo de Vía': p.tipoVia || 'Sin dato',
+      'Espacio Publicitario': p.espacioPublicitario || 'Sin dato',
       'Estado Legal': (ESTADO_LABELS[p.estadoContrato] || p.estadoContrato || 'Sin dato').toUpperCase(),
-      'Área (m²)': p.areaExhibicion ?? 'Sin dato',
-      'Registro FRAP': p.registroFRAP || 'Sin dato',
-      'Vencimiento': p.fechaVencimiento || 'Sin dato',
+      'Área Exhibición (m²)': p.areaExhibicion ?? 'Sin dato',
+      'Área Ocupación (m²)': p.areaOcupacion ?? 'Sin dato',
+      'Altura Poste (m)': p.alturaPoste ?? 'Sin dato',
+      'Alto (m)': p.alto ?? 'Sin dato',
+      'Largo (m)': p.largo ?? 'Sin dato',
+      'Espesor (m)': p.espesor ?? 'Sin dato',
+      'N° Contrato': p.numeroContrato || 'Sin dato',
+      'N° Registro FRAP': p.registroFRAP || 'Sin dato',
+      'Fecha Suscripción': p.fechaSuscripcion || 'Sin dato',
+      'Fecha Vencimiento': p.fechaVencimiento || 'Sin dato',
       'Latitud': p.latitud,
       'Longitud': p.longitud,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
 
-    // Configurar anchos automáticos de columna para máxima legibilidad
+    // Configurar anchos automáticos de columna para máxima legibilidad oficial
     worksheet['!cols'] = [
       { wch: 6 },   // N°
       { wch: 14 },  // Código
@@ -96,17 +110,27 @@ export default function InstitutionalHeader() {
       { wch: 42 },  // Dirección
       { wch: 34 },  // Empresa
       { wch: 30 },  // Tipo EPE
-      { wch: 16 },  // Material
+      { wch: 20 },  // Material
+      { wch: 26 },  // Características Técnicas
+      { wch: 16 },  // Tipo de Vía
+      { wch: 22 },  // Espacio Publicitario
       { wch: 16 },  // Estado Legal
-      { wch: 14 },  // Área
-      { wch: 16 },  // FRAP
-      { wch: 16 },  // Vencimiento
+      { wch: 18 },  // Área Exhibición
+      { wch: 18 },  // Área Ocupación
+      { wch: 16 },  // Altura Poste
+      { wch: 12 },  // Alto
+      { wch: 12 },  // Largo
+      { wch: 12 },  // Espesor
+      { wch: 18 },  // N° Contrato
+      { wch: 18 },  // Registro FRAP
+      { wch: 18 },  // Suscripción
+      { wch: 18 },  // Vencimiento
       { wch: 13 },  // Latitud
       { wch: 13 },  // Longitud
     ];
 
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Paneles_MML_Filtrados');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Paneles_MML_22_Columnas');
 
     const fechaHoy = new Date().toISOString().slice(0, 10);
     XLSX.writeFile(workbook, `reporte_paneles_mml_${fechaHoy}.xlsx`);
@@ -117,8 +141,8 @@ export default function InstitutionalHeader() {
 
   return (
     <header className={styles.headerContainer}>
-      {/* 1. Brand Identidad Oficial */}
-      <div className={styles.brandSection}>
+      {/* 1. Brand Identidad Oficial (GPIP · Paneles Lima) */}
+      <div className={`${styles.brandSection} ${mobileSearchOpen ? styles.hideOnMobileSearch : ''}`}>
         <div className={styles.emblemWrapper} title="Municipalidad Metropolitana de Lima">
           <img
             src="/logo_mml.png"
@@ -127,24 +151,36 @@ export default function InstitutionalHeader() {
             height="28"
             style={{ objectFit: 'contain' }}
             onError={(e) => {
-              // Fallback si no carga
               (e.target as HTMLElement).style.display = 'none';
             }}
           />
         </div>
 
         <div className={styles.brandText}>
-          <span className={styles.entityName}>MUNICIPALIDAD DE LIMA</span>
+          <span className={styles.entityName}>MUNICIPALIDAD METROPOLITANA DE LIMA</span>
           <div className={styles.systemTitle}>
-            <span className={styles.sigpeTag}>SIGPE</span>
-            <span>Publicidad Exterior</span>
-            <span className={styles.subtitle}>· Geoportal</span>
+            <span className={styles.sigpeTag}>GPIP</span>
+            <span className={styles.titleMain}>Paneles Lima</span>
+            <span className={styles.subtitle}>· Geoportal de Publicidad Exterior</span>
           </div>
         </div>
       </div>
 
-      {/* 2. Omnibox Buscador Inteligente */}
-      <div className={styles.searchSection}>
+      {/* 2. Omnibox Buscador Inteligente (Desktop y Mobile desplegable) */}
+      <div className={`${styles.searchSection} ${mobileSearchOpen ? styles.mobileSearchActive : ''}`}>
+        {mobileSearchOpen && (
+          <button
+            className={styles.mobileBackBtn}
+            onClick={() => setMobileSearchOpen(false)}
+            aria-label="Cerrar búsqueda móvil"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+          </button>
+        )}
+
         <div className={styles.searchForm}>
           <svg
             className={styles.searchIcon}
@@ -168,6 +204,7 @@ export default function InstitutionalHeader() {
               setShowSuggestions(true);
             }}
             onFocus={() => setShowSuggestions(true)}
+            autoFocus={mobileSearchOpen}
           />
           {searchQuery && (
             <button
@@ -208,16 +245,36 @@ export default function InstitutionalHeader() {
       </div>
 
       {/* 3. Acciones y Herramientas */}
-      <div className={styles.actionsSection} ref={toolsMenuRef}>
+      <div className={`${styles.actionsSection} ${mobileSearchOpen ? styles.hideOnMobileSearch : ''}`} ref={toolsMenuRef}>
+        {/* Botón Lupa en Móvil (< 768px) */}
+        <button
+          className={`${styles.headerBtn} ${styles.mobileSearchTrigger}`}
+          onClick={() => setMobileSearchOpen(true)}
+          title="Buscar panel o empresa"
+          aria-label="Buscar"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </button>
+
         {/* Status Badge */}
         <div className={styles.statusBadge} title="Base de Datos Supabase activa">
           <span className={styles.pulseDot} />
-          <span>
+          <span className={styles.statusTextFull}>
             {isLoading
               ? 'Conectando...'
               : isFiltered
               ? `${panelesFiltrados.length} de ${paneles.length}`
               : `${paneles.length} paneles`}
+          </span>
+          <span className={styles.statusTextCompact}>
+            {isLoading
+              ? '...'
+              : isFiltered
+              ? `${panelesFiltrados.length}/${paneles.length}`
+              : `${paneles.length}`}
           </span>
         </div>
 
@@ -238,7 +295,7 @@ export default function InstitutionalHeader() {
             <line x1="9" y1="8" x2="15" y2="8" />
             <line x1="17" y1="16" x2="23" y2="16" />
           </svg>
-          <span>Filtros</span>
+          <span className={styles.btnLabel}>Filtros</span>
           {activeFiltersCount > 0 && (
             <span
               style={{
@@ -255,18 +312,18 @@ export default function InstitutionalHeader() {
           )}
         </button>
 
-        {/* Botón Métricas y Estadísticas (activo en header; drawer inferior reservado) */}
+        {/* Botón Métricas y Estadísticas */}
         <button
           className={`${styles.headerBtn} ${dashboardAbierto ? styles.headerBtnActive : ''}`}
           onClick={toggleDashboard}
-          title="Métricas y estadísticas territoriales"
+          title="Métricas territoriales de publicidad exterior"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="20" x2="18" y2="10" />
             <line x1="12" y1="20" x2="12" y2="4" />
             <line x1="6" y1="20" x2="6" y2="14" />
           </svg>
-          <span>Métricas</span>
+          <span className={styles.btnLabel}>Métricas</span>
         </button>
 
         {/* Menú de Tres Puntos (Herramientas GIS) */}
@@ -286,17 +343,41 @@ export default function InstitutionalHeader() {
         {/* Dropdown de Herramientas */}
         {showToolsMenu && (
           <div className={styles.toolsDropdown}>
-            <div className={styles.dropdownTitle}>Herramientas del Sistema</div>
+            <div className={styles.dropdownTitle}>Herramientas de Fiscalización</div>
 
+            {/* Herramienta 1: Auditoría Global de Distancia 100m */}
+            <button
+              className={`${styles.dropdownItem} ${mostrarTodosRadios100m ? styles.dropdownItemActive : ''}`}
+              onClick={() => {
+                toggleTodosRadios100m();
+                setShowToolsMenu(false);
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="9" strokeDasharray="3 3" />
+                <circle cx="12" cy="12" r="2.5" />
+              </svg>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span>Auditoría de proximidad (100 m)</span>
+                <span style={{ fontSize: '10px', color: mostrarTodosRadios100m ? '#1E8E3E' : '#64748B', fontWeight: 700 }}>
+                  {mostrarTodosRadios100m ? '● ACTIVO (Radios sobre el mapa)' : '○ Inactivo (Ver radios normativos)'}
+                </span>
+              </div>
+            </button>
+
+            <div className={styles.dropdownDivider} />
+
+            {/* Herramienta 2: Exportar 22 Columnas */}
             <button className={styles.dropdownItem} onClick={handleExportExcel}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              <span>Exportar filtrados (.Excel)</span>
+              <span>Exportar Excel 22 col. (.xlsx)</span>
             </button>
 
+            {/* Herramienta 3: Actualizar */}
             <button
               className={styles.dropdownItem}
               onClick={() => {
@@ -314,6 +395,7 @@ export default function InstitutionalHeader() {
 
             <div className={styles.dropdownDivider} />
 
+            {/* Herramienta 4: Vista Panorámica */}
             <button
               className={styles.dropdownItem}
               onClick={() => {
@@ -324,7 +406,7 @@ export default function InstitutionalHeader() {
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polygon points="12 2 19 21 12 17 5 21 12 2" />
               </svg>
-              <span>Vista panorámica</span>
+              <span>Vista panorámica Lima</span>
             </button>
           </div>
         )}
