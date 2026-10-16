@@ -1,0 +1,341 @@
+/* ============================================================
+   GLOBALS.CSS — Sistema de Diseño Glassmorphism Analítico
+   Plataforma de Paneles Publicitarios de Lima
+   ============================================================ */
+
+/* --- Google Fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+/* --- CSS Reset Moderno --- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* --- Variables de Diseño (Modo Oscuro por defecto) --- */
+:root {
+  /* Tipografía */
+  --font-primary: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Fondos — estilo Google Dark */
+  --bg-primary: #202124;
+  --bg-secondary: #292A2D;
+  --bg-tertiary: #303134;
+  --bg-glass: rgba(41, 42, 45, 0.85);
+  --bg-glass-hover: rgba(48, 49, 52, 0.95);
+  --bg-glass-strong: rgba(32, 33, 36, 0.95);
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+
+  /* Textos */
+  --text-primary: #E8EAED;
+  --text-secondary: #9AA0A6;
+  --text-muted: #5F6368;
+  --text-inverse: #202124;
+
+  /* Acento principal — Azul Google */
+  --accent: #8AB4F8;
+  --accent-hover: #D2E3FC;
+  --accent-light: rgba(138, 180, 248, 0.15);
+  --accent-glow: rgba(138, 180, 248, 0.3);
+
+  /* Acento secundario */
+  --accent2: #F28B82;
+  --accent2-light: rgba(242, 139, 130, 0.15);
+
+  /* Semáforo — colores semánticos de contrato */
+  --color-vigente: #81C995;
+  --color-por-vencer: #FDE293;
+  --color-vencido: #F28B82;
+  --color-sin-dato: #9AA0A6;
+
+  /* Bordes */
+  --border-color: #3C4043;
+  --border-hover: #5F6368;
+  --border-focus: #8AB4F8;
+
+  /* Sombras — cálidas */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.32);
+  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.42);
+  --shadow-glow: 0 0 20px rgba(224, 92, 58, 0.18);
+
+  /* Glassmorphism */
+  --glass-blur: 14px;
+  --glass-blur-strong: 22px;
+
+  /* Bordes redondeados */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Transiciones */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Espaciado */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Z-index layers */
+  --z-map: 1;
+  --z-controls: 10;
+  --z-panel: 20;
+  --z-search: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+}
+
+/* --- Modo Claro — Google Light --- */
+[data-theme='light'] {
+  --bg-primary: #F8F9FA;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: #F1F3F4;
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  --bg-glass-hover: rgba(241, 243, 244, 0.95);
+  --bg-glass-strong: rgba(255, 255, 255, 0.95);
+  --bg-overlay: rgba(32, 33, 36, 0.4);
+
+  --text-primary: #202124;
+  --text-secondary: #5F6368;
+  --text-muted: #80868B;
+  --text-inverse: #FFFFFF;
+
+  --border-color: #DADCE0;
+  --border-hover: #BDC1C6;
+  
+  --accent: #1A73E8;
+  --accent-hover: #1557B0;
+  --accent-light: rgba(26, 115, 232, 0.12);
+  --accent-glow: rgba(26, 115, 232, 0.25);
+  
+  --color-vigente: #1E8E3E;
+  --color-por-vencer: #F9AB00;
+  --color-vencido: #D93025;
+  --color-sin-dato: #80868B;
+
+  --shadow-sm: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+  --shadow-md: 0 1px 2px 0 rgba(60,64,67,0.3), 0 2px 6px 2px rgba(60,64,67,0.15);
+  --shadow-lg: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+}
+
+/* --- Base del documento --- */
+html,
+body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: var(--font-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Scrollbar personalizado --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* --- Links --- */
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+/* --- Selección de texto --- */
+::selection {
+  background: var(--accent-light);
+  color: var(--text-primary);
+}
+
+/* --- Focus visible (accesibilidad) --- */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* --- Utilidades de glassmorphism --- */
+.glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+}
+
+.glass-strong {
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(var(--glass-blur-strong));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+}
+
+/* --- Animaciones --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Clases de estado para colores de contrato --- */
+.statusVigente { color: var(--color-vigente); }
+.statusPorVencer { color: var(--color-por-vencer); }
+.statusVencido { color: var(--color-vencido); }
+.statusSinDato { color: var(--color-sin-dato); }
+
+/* --- Utilidades comunes --- */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* --- App container --- */
+#__next,
+main {
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+/* --- MapLibre Escala Cartográfica Oficial (Google Maps Style) --- */
+.maplibregl-ctrl-bottom-left {
+  left: 140px !important;
+  bottom: 24px !important;
+  margin: 0 !important;
+  z-index: var(--z-controls) !important;
+}
+
+.maplibregl-ctrl-scale {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border: 2px solid #5F6368 !important;
+  border-top: none !important;
+  color: #202124 !important;
+  font-family: var(--font-primary), Roboto, sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  padding: 1px 6px !important;
+  border-radius: 0 0 2px 2px;
+  line-height: 1.2 !important;
+}
+
+[data-theme='dark'] .maplibregl-ctrl-scale {
+  background-color: rgba(32, 33, 36, 0.92) !important;
+  border-color: #9AA0A6 !important;
+  color: #E8EAED !important;
+}
+
+/* --- Impresión Oficial de Ficha Técnica (PDF A4) --- */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
+
+  header,
+  nav,
+  .maplibregl-control-container,
+  button,
+  a {
+    display: none !important;
+  }
+
+  .ficha-tecnica-print {
+    position: static !important;
+    width: 100% !important;
+    max-width: 680px !important;
+    margin: 20px auto !important;
+    box-shadow: none !important;
+    border: 2px solid #202124 !important;
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
+}
+
+

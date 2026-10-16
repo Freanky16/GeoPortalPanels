@@ -1,0 +1,33 @@
+.counter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-sm) var(--space-md);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: 0.01em;
+}
+
+.counterValue {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  animation: countUp var(--transition-slow) ease-out;
+}
+
+/* Número de paneles destaca con el acento */
+.counter > .counterValue:first-child {
+  color: var(--accent);
+}
+
+.counterDot {
+  width: 1px;
+  height: 12px;
+  background: var(--border-hover);
+  border-radius: 1px;
+  margin: 0 2px;
+}

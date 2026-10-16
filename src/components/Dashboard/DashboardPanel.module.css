@@ -1,0 +1,113 @@
+.dashboardContainer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 300px;
+  z-index: var(--z-panel);
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(var(--glass-blur-strong));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
+  transition: transform var(--transition-spring);
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboardClosed {
+  transform: translateY(100%);
+}
+
+.toggleBtn {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(var(--glass-blur-strong));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  border: 1px solid var(--border-color);
+  border-top: 2px solid var(--accent);
+  border-bottom: none;
+  padding: 7px 28px;
+  border-radius: 14px 14px 0 0;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.15);
+  transition: all var(--transition-fast);
+}
+
+.toggleBtn:hover {
+  background: var(--bg-glass-hover);
+  color: var(--accent);
+}
+
+.toggleIcon {
+  transition: transform var(--transition-fast);
+}
+
+.toggleIconOpen {
+  transform: rotate(180deg);
+}
+
+.content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  height: 100%;
+  overflow-y: auto;
+}
+
+.chartCard {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  height: 250px;
+  border: 1px solid var(--border-color);
+}
+
+.chartTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+}
+
+.chartBody {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+/* Custom Tooltip para Recharts */
+.customTooltip {
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border-color);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.tooltipLabel {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.tooltipValue {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 14px;
+}

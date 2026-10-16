@@ -1,0 +1,144 @@
+.cardContainer {
+  position: absolute;
+  top: 80px;
+  right: var(--space-md);
+  width: 340px;
+  max-height: calc(100vh - 100px);
+  z-index: var(--z-panel);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  animation: slideInRight var(--transition-spring);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.titleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.codigo {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.frap {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.closeButton {
+  background: var(--bg-tertiary);
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.closeButton:hover {
+  background: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.content {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.imagePlaceholder {
+  width: 100%;
+  height: 160px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  gap: 8px;
+  font-size: 13px;
+  border: 1px dashed var(--border-color);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: right;
+  word-break: break-word;
+}
+
+.statusTag {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg-tertiary);
+}
+
+.statusVigente { color: var(--color-vigente); background: rgba(16, 185, 129, 0.1); }
+.statusPorVencer { color: var(--color-por-vencer); background: rgba(245, 158, 11, 0.1); }
+.statusVencido { color: var(--color-vencido); background: rgba(239, 68, 68, 0.1); }
+.statusSinDato { color: var(--text-muted); }
+
+.divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: var(--space-xs) 0;
+}
+
+.moreButton {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-top: var(--space-sm);
+}
+
+.moreButton:hover {
+  background: var(--accent);
+  color: white;
+}

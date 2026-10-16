@@ -1,0 +1,38 @@
+/* ============================================================
+   MapView Styles
+   ============================================================ */
+
+.mapWrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: var(--z-map);
+  background-color: #0F172A;
+}
+
+.mapContainer {
+  width: 100%;
+  height: 100%;
+}
+
+/* Personalizar los controles nativos de MapLibre */
+:global(.maplibregl-ctrl-attrib) {
+  display: none !important;
+}
+
+:global(.maplibregl-popup-content) {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 10px !important;
+  padding: 8px 12px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  pointer-events: none !important;
+}
+
+:global(.maplibregl-popup-tip) {
+  border-top-color: rgba(255, 255, 255, 0.95) !important;
+}

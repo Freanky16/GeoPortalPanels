@@ -1,0 +1,86 @@
+/* ============================================================
+   QuickViewBar — Atajos Rápidos, estilo institucional formal
+   ============================================================ */
+
+.quickViewContainer {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-controls);
+  display: flex;
+  gap: 6px;
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(var(--glass-blur-strong));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+  padding: 8px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.06);
+  overflow-x: auto;
+  max-width: 90vw;
+}
+
+/* Barra de separación visual entre botones */
+.quickViewContainer > :not(:last-child)::after {
+  display: none;
+}
+
+.quickViewBtn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 5px 13px 5px 10px;
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-base);
+  letter-spacing: 0.01em;
+  border-left-width: 3px;
+}
+
+/* Colores del borde izquierdo por tipo — identidad visual clara */
+.quickViewBtn:nth-child(1) { border-left-color: var(--warning); }  /* ámbar — por vencer */
+.quickViewBtn:nth-child(2) { border-left-color: var(--success); }  /* verde — vigente */
+.quickViewBtn:nth-child(3) { border-left-color: var(--danger); }  /* rojo — vencido */
+.quickViewBtn:nth-child(4) { border-left-color: var(--accent); }   /* azul — monumentales */
+
+.indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.quickViewBtn:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-hover);
+  border-left-width: 3px;
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+
+/* Mantener color de borde izquierdo al hover */
+.quickViewBtn:nth-child(1):hover { border-left-color: var(--warning); }
+.quickViewBtn:nth-child(2):hover { border-left-color: var(--success); }
+.quickViewBtn:nth-child(3):hover { border-left-color: var(--danger); }
+.quickViewBtn:nth-child(4):hover { border-left-color: var(--accent); }
+
+.quickViewBtn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Scrollbar invisible en móvil */
+.quickViewContainer::-webkit-scrollbar {
+  height: 0px;
+  background: transparent;
+}
+
