@@ -255,8 +255,7 @@ export default function InstitutionalHeader() {
           )}
         </button>
 
-        {/* Botón Dashboard Analítico — Oculto temporalmente para entrega preliminar */}
-        {/*
+        {/* Botón Métricas y Estadísticas (activo en header; drawer inferior reservado) */}
         <button
           className={`${styles.headerBtn} ${dashboardAbierto ? styles.headerBtnActive : ''}`}
           onClick={toggleDashboard}
@@ -269,7 +268,6 @@ export default function InstitutionalHeader() {
           </svg>
           <span>Métricas</span>
         </button>
-        */}
 
         {/* Menú de Tres Puntos (Herramientas GIS) */}
         <button
