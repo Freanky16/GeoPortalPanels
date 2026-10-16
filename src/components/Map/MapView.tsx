@@ -10,6 +10,7 @@ import { usePanelStore } from '@/store/usePanelStore';
 import { useFilterStore } from '@/store/useFilterStore';
 import { MAP_STYLES, INITIAL_VIEW } from '@/lib/mapConfig';
 import { ESTADO_COLORS, TIPO_EPE_COLORS } from '@/lib/constants';
+import { Panel } from '@/types';
 
 // Configurar el worker estático para Next.js (Turbopack)
 maplibregl.setWorkerUrl('/maplibre/maplibre-gl-worker.js');
@@ -102,6 +103,30 @@ function createGeoJSONCircles(centers: [number, number][], radiusInMeters: numbe
   };
 }
 
+/**
+ * Convierte un arreglo de paneles a FeatureCollection GeoJSON listo para MapLibre
+ */
+function buildPanelsGeoJSON(paneles: Panel[]): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: paneles.map((panel) => ({
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [panel.longitud, panel.latitud],
+      },
+      properties: {
+        id: panel.id,
+        codigo: panel.codigo,
+        estadoContrato: panel.estadoContrato,
+        tipoEPE: panel.tipoEPE,
+        empresa: panel.empresa,
+        panelData: JSON.stringify(panel),
+      },
+    })),
+  };
+}
+
 export default function MapView() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -124,16 +149,32 @@ export default function MapView() {
   const panelesFiltrados = useFilteredPanels();
   const distritosFiltro = useFilterStore((state) => state.filtros.distritos);
 
+  // Refs para que los callbacks de eventos de MapLibre siempre tengan los datos más recientes
+  const panelesFiltradosRef = useRef(panelesFiltrados);
+  panelesFiltradosRef.current = panelesFiltrados;
+
+  const distritosFiltroRef = useRef(distritosFiltro);
+  distritosFiltroRef.current = distritosFiltro;
+
+  const mostrarRadio100mRef = useRef(mostrarRadio100m);
+  mostrarRadio100mRef.current = mostrarRadio100m;
+
+  const mostrarTodosRadios100mRef = useRef(mostrarTodosRadios100m);
+  mostrarTodosRadios100mRef.current = mostrarTodosRadios100m;
+
+  const panelSeleccionadoRef = useRef(panelSeleccionado);
+  panelSeleccionadoRef.current = panelSeleccionado;
+
   /**
    * Agrega la fuente GeoJSON y las capas de visualización al mapa.
    * Se llama tanto en la carga inicial como después de cambiar estilo.
    */
   const addSourceAndLayers = useCallback((mapInstance: maplibregl.Map) => {
-    // 1. Agregar fuente GeoJSON de Paneles (SIN clusters para máxima precisión geográfica)
+    // 1. Agregar fuente GeoJSON de Paneles (precargada con los paneles actuales)
     if (!mapInstance.getSource(SOURCE_ID)) {
       mapInstance.addSource(SOURCE_ID, {
         type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
+        data: buildPanelsGeoJSON(panelesFiltradosRef.current),
         cluster: false,
       });
     }
@@ -276,7 +317,9 @@ export default function MapView() {
     if (!mapInstance.getSource(RADIO_BUFFER_SOURCE_ID)) {
       mapInstance.addSource(RADIO_BUFFER_SOURCE_ID, {
         type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
+        data: (mostrarRadio100mRef.current && panelSeleccionadoRef.current)
+          ? createGeoJSONCircle([panelSeleccionadoRef.current.longitud, panelSeleccionadoRef.current.latitud], 100)
+          : { type: 'FeatureCollection', features: [] },
       });
     }
 
@@ -316,7 +359,9 @@ export default function MapView() {
     if (!mapInstance.getSource(RADIO_ALL_BUFFER_SOURCE_ID)) {
       mapInstance.addSource(RADIO_ALL_BUFFER_SOURCE_ID, {
         type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
+        data: (mostrarTodosRadios100mRef.current && panelesFiltradosRef.current.length > 0)
+          ? createGeoJSONCircles(panelesFiltradosRef.current.map(p => [p.longitud, p.latitud]), 100)
+          : { type: 'FeatureCollection', features: [] },
       });
     }
 
@@ -467,6 +512,18 @@ export default function MapView() {
       setTimeout(() => mapInstance.resize(), 100);
     });
 
+    // Guardián permanente: si el estilo cambia o se recarga, reinstala capas y datos inmediatamente
+    mapInstance.on('styledata', () => {
+      if (mapInstance.isStyleLoaded() && !mapInstance.getSource(SOURCE_ID)) {
+        addSourceAndLayers(mapInstance);
+        setupMapInteractions(mapInstance);
+        const src = mapInstance.getSource(SOURCE_ID) as maplibregl.GeoJSONSource;
+        if (src) {
+          src.setData(buildPanelsGeoJSON(panelesFiltradosRef.current));
+        }
+      }
+    });
+
     // Guardar estado de vista al mover/zoom
     mapInstance.on('moveend', () => {
       const center = mapInstance.getCenter();
@@ -554,15 +611,51 @@ export default function MapView() {
 
     const styleDefinition = MAP_STYLES[mapStyle] || MAP_STYLES.hybrid;
 
-    setMapReady(false);
-    map.current.setStyle(styleDefinition as any);
-
-    map.current.once('style.load', () => {
+    const reapplyAllData = () => {
       if (!map.current) return;
       addSourceAndLayers(map.current);
       setupMapInteractions(map.current);
+
+      const src = map.current.getSource(SOURCE_ID) as maplibregl.GeoJSONSource;
+      if (src) {
+        src.setData(buildPanelsGeoJSON(panelesFiltradosRef.current));
+      }
+
+      // Reaplicar resalte de distritos
+      if (map.current.getLayer(DISTRITOS_HIGHLIGHT_LAYER) && map.current.getLayer(DISTRITOS_FILL_LAYER)) {
+        if (distritosFiltroRef.current && distritosFiltroRef.current.length > 0) {
+          const filterExpr: any = ['in', 'distrito', ...distritosFiltroRef.current.map(d => d.toUpperCase())];
+          map.current.setFilter(DISTRITOS_HIGHLIGHT_LAYER, filterExpr);
+          map.current.setFilter(DISTRITOS_FILL_LAYER, filterExpr);
+        } else {
+          map.current.setFilter(DISTRITOS_HIGHLIGHT_LAYER, ['in', 'distrito', '']);
+          map.current.setFilter(DISTRITOS_FILL_LAYER, ['in', 'distrito', '']);
+        }
+      }
+
       setMapReady(true);
+    };
+
+    let reloaded = false;
+    const handleReady = () => {
+      if (reloaded) return;
+      reloaded = true;
+      reapplyAllData();
+    };
+
+    map.current.setStyle(styleDefinition as any);
+    map.current.once('style.load', handleReady);
+    map.current.once('styledata', () => {
+      if (map.current?.isStyleLoaded()) handleReady();
     });
+
+    const timer = setTimeout(() => {
+      if (!reloaded && map.current?.isStyleLoaded()) {
+        handleReady();
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
   }, [mapStyle, addSourceAndLayers, setupMapInteractions]);
 
   // 5. FlyTo (volar suavemente hacia una coordenada)
