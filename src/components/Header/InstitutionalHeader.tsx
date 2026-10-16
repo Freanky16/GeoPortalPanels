@@ -7,6 +7,8 @@ import { useUIStore } from '@/store/useUIStore';
 import { useFilteredPanels } from '@/hooks/useFilteredPanels';
 import { useFilterStore } from '@/store/useFilterStore';
 import { Panel } from '@/types';
+import * as XLSX from 'xlsx';
+import { ESTADO_LABELS } from '@/lib/constants';
 
 export default function InstitutionalHeader() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,42 +66,50 @@ export default function InstitutionalHeader() {
     setSearchQuery('');
   };
 
-  // Exportar paneles filtrados a CSV
-  const handleExportCSV = () => {
+  // Exportar paneles filtrados a Microsoft Excel (.XLSX) profesional con columnas y anchos reales
+  const handleExportExcel = () => {
     if (!panelesFiltrados.length) return;
 
-    const headers = [
-      'Codigo',
-      'Distrito',
-      'Empresa',
-      'Tipo EPE',
-      'Material',
-      'Estado Contrato',
-      'Latitud',
-      'Longitud',
+    const rows = panelesFiltrados.map((p, index) => ({
+      'N°': index + 1,
+      'Código': p.codigo,
+      'Distrito': p.distrito || 'Sin dato',
+      'Dirección': p.direccion || 'Sin dato',
+      'Empresa': p.empresa || 'Sin dato',
+      'Tipo EPE': p.tipoEPE || 'Sin dato',
+      'Material': p.materialPredominante || 'Sin dato',
+      'Estado Legal': (ESTADO_LABELS[p.estadoContrato] || p.estadoContrato || 'Sin dato').toUpperCase(),
+      'Área (m²)': p.areaExhibicion ?? 'Sin dato',
+      'Registro FRAP': p.registroFRAP || 'Sin dato',
+      'Vencimiento': p.fechaVencimiento || 'Sin dato',
+      'Latitud': p.latitud,
+      'Longitud': p.longitud,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+
+    // Configurar anchos automáticos de columna para máxima legibilidad
+    worksheet['!cols'] = [
+      { wch: 6 },   // N°
+      { wch: 14 },  // Código
+      { wch: 22 },  // Distrito
+      { wch: 42 },  // Dirección
+      { wch: 34 },  // Empresa
+      { wch: 30 },  // Tipo EPE
+      { wch: 16 },  // Material
+      { wch: 16 },  // Estado Legal
+      { wch: 14 },  // Área
+      { wch: 16 },  // FRAP
+      { wch: 16 },  // Vencimiento
+      { wch: 13 },  // Latitud
+      { wch: 13 },  // Longitud
     ];
-    const rows = panelesFiltrados.map((p) => [
-      `"${p.codigo}"`,
-      `"${p.distrito || ''}"`,
-      `"${p.empresa || ''}"`,
-      `"${p.tipoEPE || ''}"`,
-      `"${p.materialPredominante || ''}"`,
-      `"${p.estadoContrato || ''}"`,
-      p.latitud,
-      p.longitud,
-    ]);
 
-    const csvContent =
-      'data:text/csv;charset=utf-8,\uFEFF' +
-      [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Paneles_MML_Filtrados');
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `paneles_lima_filtrados_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const fechaHoy = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(workbook, `reporte_paneles_mml_${fechaHoy}.xlsx`);
     setShowToolsMenu(false);
   };
 
@@ -245,7 +255,8 @@ export default function InstitutionalHeader() {
           )}
         </button>
 
-        {/* Botón Dashboard Analítico */}
+        {/* Botón Dashboard Analítico — Oculto temporalmente para entrega preliminar */}
+        {/*
         <button
           className={`${styles.headerBtn} ${dashboardAbierto ? styles.headerBtnActive : ''}`}
           onClick={toggleDashboard}
@@ -258,6 +269,7 @@ export default function InstitutionalHeader() {
           </svg>
           <span>Métricas</span>
         </button>
+        */}
 
         {/* Menú de Tres Puntos (Herramientas GIS) */}
         <button
@@ -278,13 +290,13 @@ export default function InstitutionalHeader() {
           <div className={styles.toolsDropdown}>
             <div className={styles.dropdownTitle}>Herramientas del Sistema</div>
 
-            <button className={styles.dropdownItem} onClick={handleExportCSV}>
+            <button className={styles.dropdownItem} onClick={handleExportExcel}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              <span>Exportar filtrados (.CSV)</span>
+              <span>Exportar filtrados (.Excel)</span>
             </button>
 
             <button
@@ -300,25 +312,6 @@ export default function InstitutionalHeader() {
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
               </svg>
               <span>Actualizar datos</span>
-            </button>
-
-            <button
-              className={styles.dropdownItem}
-              onClick={() => {
-                if (typeof document !== 'undefined') {
-                  if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen().catch(() => {});
-                  } else {
-                    document.exitFullscreen().catch(() => {});
-                  }
-                }
-                setShowToolsMenu(false);
-              }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-              </svg>
-              <span>Pantalla completa</span>
             </button>
 
             <div className={styles.dropdownDivider} />

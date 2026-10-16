@@ -8,8 +8,14 @@
   z-index: var(--z-panel);
   display: flex;
   flex-direction: column;
-  transition: transform var(--transition-spring), opacity var(--transition-fast);
+  transition: transform var(--transition-spring), opacity var(--transition-fast), bottom 0.25s ease, max-height 0.25s ease;
   border-top: 3px solid #1A73E8 !important;
+}
+
+/* Si la leyenda se abre, el cajón sube para evitar cualquier colisión */
+.panelLifted {
+  bottom: 260px !important;
+  max-height: calc(100vh - 340px) !important;
 }
 
 .panelClosed {

@@ -314,7 +314,7 @@ export default function MapView() {
         vigente: { text: 'Vigente', color: '#10B981' },
         por_vencer: { text: 'Por Vencer', color: '#F59E0B' },
         vencido: { text: 'Vencido', color: '#EF4444' },
-        sin_dato: { text: 'Sin Dato', color: '#6B7280' },
+        sin_dato: { text: 'Sin Dato', color: '#0284C7' },
       };
       const badge = estadoLabels[estado] || estadoLabels.sin_dato;
 

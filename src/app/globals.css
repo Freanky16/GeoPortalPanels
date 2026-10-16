@@ -55,7 +55,7 @@ html {
   --color-vigente: #81C995;
   --color-por-vencer: #FDE293;
   --color-vencido: #F28B82;
-  --color-sin-dato: #9AA0A6;
+  --color-sin-dato: #0284C7;
 
   /* Bordes */
   --border-color: #3C4043;
@@ -128,7 +128,7 @@ html {
   --color-vigente: #1E8E3E;
   --color-por-vencer: #F9AB00;
   --color-vencido: #D93025;
-  --color-sin-dato: #80868B;
+  --color-sin-dato: #0284C7;
 
   --shadow-sm: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
   --shadow-md: 0 1px 2px 0 rgba(60,64,67,0.3), 0 2px 6px 2px rgba(60,64,67,0.15);

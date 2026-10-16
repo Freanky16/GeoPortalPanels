@@ -7,7 +7,7 @@
   position: absolute;
   bottom: 24px;
   left: 16px;
-  z-index: var(--z-controls);
+  z-index: calc(var(--z-panel) + 2);
 }
 
 .legendToggle {

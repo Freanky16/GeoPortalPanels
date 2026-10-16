@@ -11,6 +11,7 @@ import { usePanelStore } from '@/store/usePanelStore';
 export default function FilterPanel() {
   const isOpen = useUIStore((state) => state.filtrosPanelAbierto);
   const togglePanel = useUIStore((state) => state.toggleFiltrosPanel);
+  const leyendaAbierta = useUIStore((state) => state.leyendaAbierta);
   const catalogos = usePanelStore((state) => state.catalogos);
 
   // Mapeamos los estados fijos de contrato para el filtro
@@ -24,7 +25,7 @@ export default function FilterPanel() {
   return (
     <>
       {/* Panel principal */}
-      <GlassCard className={`${styles.panelContainer} ${!isOpen ? styles.panelClosed : ''}`}>
+      <GlassCard className={`${styles.panelContainer} ${!isOpen ? styles.panelClosed : ''} ${leyendaAbierta ? styles.panelLifted : ''}`}>
         <div className={styles.panelHeader}>
           <div className={styles.panelTitle}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

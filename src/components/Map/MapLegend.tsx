@@ -6,7 +6,9 @@ import { useUIStore } from '@/store/useUIStore';
 import { ESTADO_COLORS, ESTADO_LABELS, TIPO_EPE_COLORS } from '@/lib/constants';
 
 export default function MapLegend() {
-  const [isOpen, setIsOpen] = React.useState(false);
+  const isOpen = useUIStore((state) => state.leyendaAbierta);
+  const toggleLeyenda = useUIStore((state) => state.toggleLeyenda);
+  const setLeyendaAbierta = useUIStore((state) => state.setLeyendaAbierta);
   const colorScheme = useUIStore((state) => state.colorScheme);
   const setColorScheme = useUIStore((state) => state.setColorScheme);
 
@@ -29,7 +31,7 @@ export default function MapLegend() {
     <div className={styles.legendWrapper}>
       <button
         className={styles.legendToggle}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleLeyenda}
         aria-label="Alternar leyenda"
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -47,7 +49,7 @@ export default function MapLegend() {
               Leyenda
             </span>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={() => setLeyendaAbierta(false)}
               style={{ background: 'none', border: 'none', color: '#70757A', cursor: 'pointer', padding: 2 }}
               aria-label="Cerrar simbología"
             >

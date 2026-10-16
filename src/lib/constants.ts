@@ -15,7 +15,7 @@ export const ESTADO_COLORS: Record<string, string> = {
   vigente: '#16A34A',      // Verde natural
   por_vencer: '#D97706',   // Ámbar dorado
   vencido: '#DC2626',      // Rojo intenso
-  sin_dato: '#78716C',     // Stone neutral
+  sin_dato: '#0284C7',     // Azul celeste vívido (alta visibilidad en cualquier relieve o satélite)
 };
 
 export const ESTADO_LABELS: Record<string, string> = {
