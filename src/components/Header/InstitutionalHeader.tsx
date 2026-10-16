@@ -197,7 +197,7 @@ export default function InstitutionalHeader() {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Buscar por código (ej. 1_NAP), empresa o calle..."
+            placeholder="Buscar por código, empresa o calle..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);

@@ -71,7 +71,7 @@ export default function PanelCard() {
           <div className={styles.row}>
             <span className={styles.label}>Coordenadas WGS84</span>
             <span className={styles.value} style={{ fontSize: 11, fontFamily: 'monospace' }}>
-              {panel.latitud.toFixed(5)}, {panel.longitud.toFixed(5)}
+              {panel.latitud}, {panel.longitud}
             </span>
           </div>
 

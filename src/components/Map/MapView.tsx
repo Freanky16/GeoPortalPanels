@@ -239,7 +239,14 @@ export default function MapView() {
             17, 7.0,
             19, 9.0,
           ],
-          'circle-color': '#A8A29E',
+          'circle-color': [
+            'match',
+            ['get', 'estadoContrato'],
+            'vigente', ESTADO_COLORS.vigente,
+            'por_vencer', ESTADO_COLORS.por_vencer,
+            'vencido', ESTADO_COLORS.vencido,
+            ESTADO_COLORS.sin_dato,
+          ],
           'circle-opacity': [
             'interpolate', ['linear'], ['zoom'],
             8, 0.0,
@@ -507,36 +514,22 @@ export default function MapView() {
     source.setData(geojson);
   }, [panelesFiltrados, mapReady]);
 
-  // 3. Actualizar colores según el ColorScheme seleccionado
+  // 3. Estándar único de color: Estado Legal (Vigente, Por vencer, Vencido, Sin dato)
   useEffect(() => {
     if (!mapReady || !map.current) return;
     if (!map.current.getLayer(PANELES_POINT_LAYER)) return;
 
-    const fallback = '#64748B';
-    let colorExpression: maplibregl.ExpressionSpecification | string = fallback;
-
-    if (colorScheme === 'estado_contrato') {
-      colorExpression = [
-        'match',
-        ['get', 'estadoContrato'],
-        'vigente', ESTADO_COLORS.vigente,
-        'por_vencer', ESTADO_COLORS.por_vencer,
-        'vencido', ESTADO_COLORS.vencido,
-        ESTADO_COLORS.sin_dato,
-      ];
-    } else if (colorScheme === 'tipo_epe') {
-      const matchArray: (string | string[])[] = ['match', ['get', 'tipoEPE']];
-      Object.entries(TIPO_EPE_COLORS).forEach(([tipo, color]) => {
-        matchArray.push(tipo, color);
-      });
-      matchArray.push(fallback);
-      colorExpression = matchArray as maplibregl.ExpressionSpecification;
-    } else if (colorScheme === 'empresa') {
-      colorExpression = '#0284C7';
-    }
+    const colorExpression: maplibregl.ExpressionSpecification = [
+      'match',
+      ['get', 'estadoContrato'],
+      'vigente', ESTADO_COLORS.vigente,
+      'por_vencer', ESTADO_COLORS.por_vencer,
+      'vencido', ESTADO_COLORS.vencido,
+      /* default (sin dato) */ ESTADO_COLORS.sin_dato,
+    ];
 
     map.current.setPaintProperty(PANELES_POINT_LAYER, 'circle-color', colorExpression);
-  }, [colorScheme, mapReady]);
+  }, [mapReady]);
 
   // 3.5. Actualizar resalte de distritos
   useEffect(() => {

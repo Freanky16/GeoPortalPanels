@@ -27,7 +27,7 @@ export default function MapSwitcher() {
 
       {isOpen && (
         <div className={styles.switcherPanel}>
-          <div className={styles.switcherTitle}>🗺️ Estilo de Mapa</div>
+          <div className={styles.switcherTitle}>Estilo de Mapa</div>
           {Object.entries(MAP_STYLE_NAMES).map(([key, name]) => (
             <button
               key={key}

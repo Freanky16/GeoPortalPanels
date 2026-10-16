@@ -3,29 +3,17 @@
 import React from 'react';
 import styles from './MapLegend.module.css';
 import { useUIStore } from '@/store/useUIStore';
-import { ESTADO_COLORS, ESTADO_LABELS, TIPO_EPE_COLORS } from '@/lib/constants';
+import { ESTADO_COLORS, ESTADO_LABELS } from '@/lib/constants';
 
 export default function MapLegend() {
   const isOpen = useUIStore((state) => state.leyendaAbierta);
   const toggleLeyenda = useUIStore((state) => state.toggleLeyenda);
   const setLeyendaAbierta = useUIStore((state) => state.setLeyendaAbierta);
-  const colorScheme = useUIStore((state) => state.colorScheme);
-  const setColorScheme = useUIStore((state) => state.setColorScheme);
 
-  const schemes = [
-    { key: 'estado_contrato' as const, label: 'Estado Legal' },
-    { key: 'tipo_epe' as const, label: 'Tipo EPE' },
-  ];
-
-  const legendItems = colorScheme === 'tipo_epe'
-    ? Object.entries(TIPO_EPE_COLORS).map(([label, color]) => ({
-        color,
-        label,
-      }))
-    : Object.entries(ESTADO_COLORS).map(([key, color]) => ({
-        color,
-        label: ESTADO_LABELS[key] || key,
-      }));
+  const legendItems = Object.entries(ESTADO_COLORS).map(([key, color]) => ({
+    color,
+    label: ESTADO_LABELS[key] || key,
+  }));
 
   return (
     <div className={styles.legendWrapper}>
@@ -46,7 +34,7 @@ export default function MapLegend() {
         <div className={styles.legendContainer}>
           <div className={styles.legendHeader}>
             <span style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#1A73E8' }}>
-              Leyenda
+              Estado Legal
             </span>
             <button
               onClick={() => setLeyendaAbierta(false)}
@@ -57,20 +45,7 @@ export default function MapLegend() {
             </button>
           </div>
 
-          {/* Color scheme switcher */}
-          <div className={styles.schemeSelector}>
-            {schemes.map((s) => (
-              <button
-                key={s.key}
-                className={`${styles.schemeBtn} ${colorScheme === s.key ? styles.schemeBtnActive : ''}`}
-                onClick={() => setColorScheme(s.key)}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Legend items */}
+          {/* Legend items: un solo estándar de color para todos los paneles */}
           <div className={styles.legendItems}>
             {legendItems.map((item) => (
               <div className={styles.legendItem} key={item.label}>
