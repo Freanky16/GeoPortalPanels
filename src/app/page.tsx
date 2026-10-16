@@ -53,10 +53,10 @@ export default function Home() {
     flyTo([-77.0428, -12.0464], 12);
   }, [flyTo]);
 
-  if (!mounted) return <main style={{ width: '100vw', height: '100vh', background: '#0F172A' }} />;
+  if (!mounted) return <main style={{ width: '100vw', height: '100dvh', background: '#0F172A' }} />;
 
   return (
-    <main style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+    <main style={{ width: '100vw', height: '100dvh', position: 'relative', overflow: 'hidden' }}>
       <Suspense fallback={null}>
         <SyncHooks />
       </Suspense>
