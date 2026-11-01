@@ -15,6 +15,7 @@ export default function InstitutionalHeader() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [coordNotFound, setCoordNotFound] = useState(false);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
 
   // Stores
@@ -45,9 +46,22 @@ export default function InstitutionalHeader() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Búsqueda predictiva
+  // Búqueda predictiva con soporte de coordenadas
+  const coordRegex = /^\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\s*$/;
   const searchResults = useMemo(() => {
     if (!searchQuery.trim() || searchQuery.length < 2) return [];
+
+    // Detectar coordenadas
+    const coordMatch = searchQuery.match(coordRegex);
+    if (coordMatch) {
+      const lat = parseFloat(coordMatch[1]);
+      const lng = parseFloat(coordMatch[2]);
+      const panel = paneles.find(p => Math.abs(p.latitud - lat) < 1e-6 && Math.abs(p.longitud - lng) < 1e-6);
+      setCoordNotFound(!panel);
+      return panel ? [panel] : [];
+    }
+
+    setCoordNotFound(false);
     const q = searchQuery.toLowerCase().trim();
 
     return paneles
@@ -224,23 +238,31 @@ export default function InstitutionalHeader() {
         </div>
 
         {/* Sugerencias en tiempo real */}
-        {showSuggestions && searchResults.length > 0 && (
-          <div className={styles.suggestionsBox}>
-            {searchResults.map((panel) => (
-              <button
-                key={panel.id}
-                className={styles.suggestionItem}
-                onClick={() => handleSelectPanel(panel)}
-              >
-                <div>
-                  <span className={styles.suggestionCode}>{panel.codigo}</span>
-                  <span style={{ margin: '0 6px', color: '#64748B' }}>·</span>
-                  <span>{panel.empresa || 'Sin empresa'}</span>
-                </div>
-                <span className={styles.suggestionDetail}>{panel.distrito}</span>
-              </button>
-            ))}
-          </div>
+        {showSuggestions && (
+          <>
+            {searchResults.length > 0 ? (
+              <div className={styles.suggestionsBox}>
+                {searchResults.map((panel) => (
+                  <button
+                    key={panel.id}
+                    className={styles.suggestionItem}
+                    onClick={() => handleSelectPanel(panel)}
+                  >
+                    <div>
+                      <span className={styles.suggestionCode}>{panel.codigo}</span>
+                      <span style={{ margin: '0 6px', color: '#64748B' }}>·</span>
+                      <span>{panel.empresa || 'Sin empresa'}</span>
+                    </div>
+                    <span className={styles.suggestionDetail}>{panel.distrito}</span>
+                  </button>
+                ))}
+              </div>
+            ) : coordNotFound ? (
+              <div style={{ padding: '8px 12px', color: '#d32f2f', fontSize: '0.9rem', textAlign: 'center' }}>
+                No se encontró paneles publicitarios en esta ubicación
+              </div>
+            ) : null}
+          </>
         )}
       </div>
 

@@ -30,9 +30,11 @@ function filtrarPaneles(paneles: Panel[], filtros: FiltrosActivos): Panel[] {
       if (!coincide) return false;
     }
 
-    // Filtro por distritos
-    if (filtros.distritos.length > 0 && !filtros.distritos.includes(panel.distrito)) {
-      return false;
+    // Filtro por distritos (normalizado para manejar acentos y mayúsculas)
+    if (filtros.distritos.length > 0) {
+      const normalizedPanelDistrito = panel.distrito?.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() ?? '';
+      const match = filtros.distritos.some((d) => d.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === normalizedPanelDistrito);
+      if (!match) return false;
     }
 
     // Filtro por empresas

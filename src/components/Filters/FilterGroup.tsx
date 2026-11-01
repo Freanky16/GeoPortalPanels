@@ -1,5 +1,9 @@
 'use client';
 
+function normalizeString(str: string): string {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
 import React, { useState, useMemo } from 'react';
 import styles from './FilterGroup.module.css';
 import FilterChip from './FilterChip';
