@@ -46,35 +46,62 @@ export default function InstitutionalHeader() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Búqueda predictiva con soporte de coordenadas
-  const coordRegex = /^\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\s*$/;
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim() || searchQuery.length < 2) return [];
+  // Búsqueda predictiva con soporte de coordenadas progresivo
+  const coordFullRegex = /^\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\s*$/;
+  const coordPartialLatRegex = /^\s*-?\d+\.?\d*\s*$/;  // solo latitud parcial o completa
+  const coordPartialBothRegex = /^\s*(-?\d+(?:\.\d+)?),\s*(-?\d*\.?\d*)\s*$/; // lat + lng parcial
 
-    // Detectar coordenadas
-    const coordMatch = searchQuery.match(coordRegex);
-    if (coordMatch) {
-      const lat = parseFloat(coordMatch[1]);
-      const lng = parseFloat(coordMatch[2]);
-      const panel = paneles.find(p => Math.abs(p.latitud - lat) < 1e-6 && Math.abs(p.longitud - lng) < 1e-6);
-      setCoordNotFound(!panel);
-      return panel ? [panel] : [];
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim();
+    if (!q || q.length < 2) { setCoordNotFound(false); return []; }
+
+    // 1. Par completo: -12.1051043, -77.0181268
+    const fullMatch = q.match(coordFullRegex);
+    if (fullMatch) {
+      const lat = parseFloat(fullMatch[1]);
+      const lng = parseFloat(fullMatch[2]);
+      const results = paneles.filter(p =>
+        Math.abs(p.latitud - lat) < 0.0001 && Math.abs(p.longitud - lng) < 0.0001
+      );
+      setCoordNotFound(results.length === 0);
+      return results.slice(0, 7);
     }
 
-    setCoordNotFound(false);
-    const q = searchQuery.toLowerCase().trim();
+    // 2. Lat + coma + lng parcial: "-12.105, -77.01"
+    const partialBothMatch = q.match(coordPartialBothRegex);
+    if (partialBothMatch) {
+      const latStr = partialBothMatch[1];
+      const lngStr = partialBothMatch[2];
+      setCoordNotFound(false);
+      return paneles
+        .filter(p =>
+          String(p.latitud).startsWith(latStr) &&
+          (lngStr === '' || String(p.longitud).startsWith(lngStr.replace(/^\s*/, '')))
+        )
+        .slice(0, 7);
+    }
 
+    // 3. Solo latitud parcial: "-12.1" o "-12"
+    if (coordPartialLatRegex.test(q)) {
+      setCoordNotFound(false);
+      return paneles
+        .filter(p => String(p.latitud).startsWith(q))
+        .slice(0, 7);
+    }
+
+    // 4. Búsqueda normal por texto
+    setCoordNotFound(false);
+    const lower = q.toLowerCase();
     return paneles
-      .filter((p) => {
-        return (
-          p.codigo.toLowerCase().includes(q) ||
-          (p.empresa && p.empresa.toLowerCase().includes(q)) ||
-          (p.distrito && p.distrito.toLowerCase().includes(q)) ||
-          (p.direccion && p.direccion.toLowerCase().includes(q))
-        );
-      })
+      .filter(p =>
+        p.codigo.toLowerCase().includes(lower) ||
+        (p.empresa && p.empresa.toLowerCase().includes(lower)) ||
+        (p.distrito && p.distrito.toLowerCase().includes(lower)) ||
+        (p.direccion && p.direccion.toLowerCase().includes(lower))
+      )
       .slice(0, 7);
   }, [searchQuery, paneles]);
+
 
   const handleSelectPanel = (panel: Panel) => {
     seleccionarPanel(panel);
