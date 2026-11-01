@@ -83,7 +83,7 @@ export default function FilterGroup({
           <div className={styles.chipsContainer}>
             {displayOptions.map((opt) => {
               const count = counts[opt.nombre] || 0;
-              const isActive = activeFilters.includes(opt.nombre);
+              const isActive = activeFilters.some((v) => normalizeString(v) === normalizeString(opt.nombre));
               // Si no hay resultados y no está activo, atenuar
               const isDimmed = count === 0 && !isActive;
 
