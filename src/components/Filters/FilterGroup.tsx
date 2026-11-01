@@ -1,15 +1,15 @@
 'use client';
 
-function normalizeString(str: string): string {
-  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-}
-
 import React, { useState, useMemo } from 'react';
 import styles from './FilterGroup.module.css';
 import FilterChip from './FilterChip';
 import { useFilterStore } from '@/store/useFilterStore';
 import { useFilterCounts } from '@/hooks/useFilteredPanels';
 import { FiltrosActivos, Panel } from '@/types';
+
+function normalizeStr(str: string): string {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
 
 interface FilterGroupProps {
   title: string;
@@ -28,7 +28,7 @@ export default function FilterGroup({
 }: FilterGroupProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   const activeFilters = useFilterStore((state) => state.filtros[filterKey] as string[]);
   const toggleFilter = useFilterStore((state) => state.toggleFilter);
   const counts = useFilterCounts(panelKey, filterKey);
@@ -40,14 +40,14 @@ export default function FilterGroup({
       const lower = searchTerm.toLowerCase();
       filtered = options.filter(opt => opt.nombre.toLowerCase().includes(lower));
     }
-    
-    // Ordenar: primero seleccionados, luego con resultados > 0, luego el resto
+
+    // Ordenar: primero seleccionados (normalizado), luego con resultados > 0, luego el resto
     return [...filtered].sort((a, b) => {
-      const aActive = activeFilters.includes(a.nombre);
-      const bActive = activeFilters.includes(b.nombre);
+      const aActive = activeFilters.some(v => normalizeStr(v) === normalizeStr(a.nombre));
+      const bActive = activeFilters.some(v => normalizeStr(v) === normalizeStr(b.nombre));
       if (aActive && !bActive) return -1;
       if (!aActive && bActive) return 1;
-      
+
       const aCount = counts[a.nombre] || 0;
       const bCount = counts[b.nombre] || 0;
       return bCount - aCount;
@@ -87,8 +87,8 @@ export default function FilterGroup({
           <div className={styles.chipsContainer}>
             {displayOptions.map((opt) => {
               const count = counts[opt.nombre] || 0;
-              const isActive = activeFilters.some((v) => normalizeString(v) === normalizeString(opt.nombre));
-              // Si no hay resultados y no está activo, atenuar
+              const isActive = activeFilters.some(v => normalizeStr(v) === normalizeStr(opt.nombre));
+              // Atenuar visualmente si no hay resultados, pero NO deshabilitar el click
               const isDimmed = count === 0 && !isActive;
 
               return (
