@@ -46,58 +46,100 @@ export default function InstitutionalHeader() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Búsqueda predictiva con soporte de coordenadas progresivo
-  const coordFullRegex = /^\s*(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\s*$/;
-  const coordPartialLatRegex = /^\s*-?\d+\.?\d*\s*$/;  // solo latitud parcial o completa
-  const coordPartialBothRegex = /^\s*(-?\d+(?:\.\d+)?),\s*(-?\d*\.?\d*)\s*$/; // lat + lng parcial
-
+  // Búsqueda predictiva con soporte integral de coordenadas y texto
   const searchResults = useMemo(() => {
     const q = searchQuery.trim();
-    if (!q || q.length < 2) { setCoordNotFound(false); return []; }
+    if (!q || q.length < 2) {
+      setCoordNotFound(false);
+      return [];
+    }
 
-    // 1. Par completo: -12.1051043, -77.0181268
-    const fullMatch = q.match(coordFullRegex);
-    if (fullMatch) {
-      const lat = parseFloat(fullMatch[1]);
-      const lng = parseFloat(fullMatch[2]);
-      const results = paneles.filter(p =>
-        Math.abs(p.latitud - lat) < 0.0001 && Math.abs(p.longitud - lng) < 0.0001
+    // Dividir entrada en tokens (separados por espacios, comas, puntos y comas, o barras)
+    const tokens = q.split(/[\s,;/]+/).filter(Boolean);
+
+    // 1. Caso: Par de coordenadas (ej: "-12.065, -77.039" o "-12.065 -77.039" o "-77.039 -12.065")
+    if (tokens.length === 2) {
+      const n1 = parseFloat(tokens[0]);
+      const n2 = parseFloat(tokens[1]);
+
+      if (!isNaN(n1) && !isNaN(n2)) {
+        // En Lima Metropolitana: Latitud ~ -12.x (-14 a -11), Longitud ~ -77.x (-78 a -76)
+        // Detectar automáticamente si el usuario puso primero la longitud o la latitud
+        let targetLat = n1;
+        let targetLng = n2;
+        if (Math.abs(n1) > 40 && Math.abs(n2) < 40) {
+          targetLat = n2;
+          targetLng = n1;
+        }
+
+        // Búsqueda por proximidad geográfica (tolerancia ~500 metros)
+        const proximityMatches = paneles.filter(
+          p => Math.abs(p.latitud - targetLat) < 0.005 && Math.abs(p.longitud - targetLng) < 0.005
+        );
+
+        if (proximityMatches.length > 0) {
+          // Ordenar por cercanía exacta al punto ingresado
+          proximityMatches.sort((a, b) => {
+            const distA = Math.hypot(a.latitud - targetLat, a.longitud - targetLng);
+            const distB = Math.hypot(b.latitud - targetLat, b.longitud - targetLng);
+            return distA - distB;
+          });
+          setCoordNotFound(false);
+          return proximityMatches.slice(0, 7);
+        }
+
+        // Búsqueda por prefijo de texto de ambas coordenadas parciales
+        const partialBoth = paneles.filter(
+          p =>
+            (String(p.latitud).startsWith(tokens[0]) && String(p.longitud).startsWith(tokens[1])) ||
+            (String(p.latitud).startsWith(tokens[1]) && String(p.longitud).startsWith(tokens[0]))
+        );
+        if (partialBoth.length > 0) {
+          setCoordNotFound(false);
+          return partialBoth.slice(0, 7);
+        }
+
+        setCoordNotFound(true);
+        return [];
+      }
+    }
+
+    // 2. Caso: Una sola coordenada parcial o completa (ej: "-12.065" o "-77.039")
+    if (tokens.length === 1 && /^-?\d+\.?\d*$/.test(tokens[0])) {
+      const coordStr = tokens[0];
+      const matches = paneles.filter(
+        p =>
+          String(p.latitud).startsWith(coordStr) ||
+          String(p.longitud).startsWith(coordStr) ||
+          String(p.latitud).includes(coordStr) ||
+          String(p.longitud).includes(coordStr)
       );
-      setCoordNotFound(results.length === 0);
-      return results.slice(0, 7);
+
+      if (matches.length > 0) {
+        matches.sort((a, b) => {
+          const aStarts = String(a.latitud).startsWith(coordStr) || String(a.longitud).startsWith(coordStr);
+          const bStarts = String(b.latitud).startsWith(coordStr) || String(b.longitud).startsWith(coordStr);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+          return 0;
+        });
+        setCoordNotFound(false);
+        return matches.slice(0, 7);
+      }
     }
 
-    // 2. Lat + coma + lng parcial: "-12.105, -77.01"
-    const partialBothMatch = q.match(coordPartialBothRegex);
-    if (partialBothMatch) {
-      const latStr = partialBothMatch[1];
-      const lngStr = partialBothMatch[2];
-      setCoordNotFound(false);
-      return paneles
-        .filter(p =>
-          String(p.latitud).startsWith(latStr) &&
-          (lngStr === '' || String(p.longitud).startsWith(lngStr.replace(/^\s*/, '')))
-        )
-        .slice(0, 7);
-    }
-
-    // 3. Solo latitud parcial: "-12.1" o "-12"
-    if (coordPartialLatRegex.test(q)) {
-      setCoordNotFound(false);
-      return paneles
-        .filter(p => String(p.latitud).startsWith(q))
-        .slice(0, 7);
-    }
-
-    // 4. Búsqueda normal por texto
+    // 3. Caso: Búsqueda normal por texto (código, empresa, distrito, dirección, contrato, frap)
     setCoordNotFound(false);
     const lower = q.toLowerCase();
     return paneles
-      .filter(p =>
-        p.codigo.toLowerCase().includes(lower) ||
-        (p.empresa && p.empresa.toLowerCase().includes(lower)) ||
-        (p.distrito && p.distrito.toLowerCase().includes(lower)) ||
-        (p.direccion && p.direccion.toLowerCase().includes(lower))
+      .filter(
+        p =>
+          p.codigo.toLowerCase().includes(lower) ||
+          (p.empresa && p.empresa.toLowerCase().includes(lower)) ||
+          (p.distrito && p.distrito.toLowerCase().includes(lower)) ||
+          (p.direccion && p.direccion.toLowerCase().includes(lower)) ||
+          (p.numeroContrato && p.numeroContrato.toLowerCase().includes(lower)) ||
+          (p.registroFRAP && p.registroFRAP.toLowerCase().includes(lower))
       )
       .slice(0, 7);
   }, [searchQuery, paneles]);
@@ -243,6 +285,16 @@ export default function InstitutionalHeader() {
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setShowSuggestions(true);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (searchResults.length > 0) {
+                  handleSelectPanel(searchResults[0]);
+                }
+              } else if (e.key === 'Escape') {
+                setShowSuggestions(false);
+              }
             }}
             onFocus={() => setShowSuggestions(true)}
             autoFocus={mobileSearchOpen}

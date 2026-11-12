@@ -165,6 +165,9 @@ export default function MapView() {
   const panelSeleccionadoRef = useRef(panelSeleccionado);
   panelSeleccionadoRef.current = panelSeleccionado;
 
+  // Ref para el faro / luz pulsante (Beacon Pulse) del panel seleccionado
+  const beaconMarkerRef = useRef<maplibregl.Marker | null>(null);
+
   /**
    * Agrega la fuente GeoJSON y las capas de visualización al mapa.
    * Se llama tanto en la carga inicial como después de cambiar estilo.
@@ -534,6 +537,8 @@ export default function MapView() {
     });
 
     return () => {
+      beaconMarkerRef.current?.remove();
+      beaconMarkerRef.current = null;
       hoverPopup.current?.remove();
       map.current?.remove();
       map.current = null;
@@ -698,6 +703,70 @@ export default function MapView() {
       source.setData({ type: 'FeatureCollection', features: [] });
     }
   }, [mostrarTodosRadios100m, panelesFiltrados, mapReady]);
+
+  // 6.6. Faro / Luz pulsante (Beacon Pulse) para el panel seleccionado
+  useEffect(() => {
+    if (!mapReady || !map.current) return;
+
+    // Remover faro anterior si existía
+    if (beaconMarkerRef.current) {
+      beaconMarkerRef.current.remove();
+      beaconMarkerRef.current = null;
+    }
+
+    if (
+      !panelSeleccionado ||
+      typeof panelSeleccionado.longitud !== 'number' ||
+      typeof panelSeleccionado.latitud !== 'number' ||
+      isNaN(panelSeleccionado.longitud) ||
+      isNaN(panelSeleccionado.latitud)
+    ) return;
+
+    const color = ESTADO_COLORS[panelSeleccionado.estadoContrato] || ESTADO_COLORS.sin_dato || '#0284C7';
+
+    // Contenedor principal para MapLibre Marker
+    const el = document.createElement('div');
+    el.className = 'beacon-marker-wrapper';
+
+    // Crear el elemento DOM interactivo con animación CSS pura de pulso
+    const container = document.createElement('div');
+    container.className = 'beacon-pulse-container';
+    container.style.color = color;
+
+    const wave1 = document.createElement('div');
+    wave1.className = 'beacon-wave';
+
+    const wave2 = document.createElement('div');
+    wave2.className = 'beacon-wave beacon-wave-2';
+
+    const wave3 = document.createElement('div');
+    wave3.className = 'beacon-wave beacon-wave-3';
+
+    const dot = document.createElement('div');
+    dot.className = 'beacon-center-dot';
+
+    container.appendChild(wave1);
+    container.appendChild(wave2);
+    container.appendChild(wave3);
+    container.appendChild(dot);
+    el.appendChild(container);
+
+    const marker = new maplibregl.Marker({
+      element: el,
+      anchor: 'center',
+    })
+      .setLngLat([panelSeleccionado.longitud, panelSeleccionado.latitud])
+      .addTo(map.current);
+
+    beaconMarkerRef.current = marker;
+
+    return () => {
+      marker.remove();
+      if (beaconMarkerRef.current === marker) {
+        beaconMarkerRef.current = null;
+      }
+    };
+  }, [panelSeleccionado, mapReady]);
 
   return (
     <div className={styles.mapWrapper}>

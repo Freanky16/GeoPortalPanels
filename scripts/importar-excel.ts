@@ -21,6 +21,7 @@ import * as xlsx from 'xlsx';
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 
 // ─────────────────────────────────────────────────────────────
 // CONFIGURACIÓN
@@ -31,9 +32,12 @@ dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 const ARGS = process.argv.slice(2);
 const DRY_RUN = ARGS.includes('--dry-run');
 const FILE_FLAG = ARGS.find(a => a.startsWith('--file='));
-const EXCEL_FILE = FILE_FLAG
-  ? FILE_FLAG.split('=')[1]
-  : 'datos_reales.xlsx';
+let EXCEL_FILE = 'PlantillaEstandarBD.xlsx';
+if (FILE_FLAG) {
+  EXCEL_FILE = FILE_FLAG.split('=')[1];
+} else if (!fs.existsSync(path.join(process.cwd(), 'scripts', 'PlantillaEstandarBD.xlsx')) && fs.existsSync(path.join(process.cwd(), 'scripts', 'datos_reales.xlsx'))) {
+  EXCEL_FILE = 'datos_reales.xlsx';
+}
 const BATCH_SIZE = 100;
 
 // ─────────────────────────────────────────────────────────────
@@ -140,6 +144,24 @@ function parsearNumero(valor: any): number | null {
 }
 
 /**
+ * Parsea coordenadas geográficas (latitud / longitud).
+ * Preserva todos los decimales que vengan en el Excel.
+ * Tolera comas decimales ("-12,06535376" -> -12.06535376).
+ */
+function parsearCoordenada(valor: any): number | null {
+  if (valor == null || valor === '') return null;
+  if (typeof valor === 'number') return isNaN(valor) ? null : valor;
+
+  const limpio = String(valor)
+    .replace(/,/g, '.')
+    .replace(/\s/g, '')
+    .trim();
+
+  const num = parseFloat(limpio);
+  return isNaN(num) ? null : num;
+}
+
+/**
  * Lee un valor de una fila de Excel probando varios nombres de columna.
  * Esto hace al script tolerante a variaciones en los encabezados.
  */
@@ -214,7 +236,11 @@ function buscarEnMapa(mapa: CatMap, valor: any): string | null {
 // ─────────────────────────────────────────────────────────────
 
 async function importarExcel(): Promise<void> {
-  const filePath = path.join(process.cwd(), 'scripts', EXCEL_FILE);
+  const filePath = path.isAbsolute(EXCEL_FILE)
+    ? EXCEL_FILE
+    : fs.existsSync(EXCEL_FILE)
+      ? path.resolve(EXCEL_FILE)
+      : path.join(process.cwd(), 'scripts', EXCEL_FILE);
 
   // ── Banner ──
   console.log('\n' + '═'.repeat(62));
@@ -358,11 +384,11 @@ async function importarExcel(): Promise<void> {
       filaValida = false;
     }
 
-    // Parsear coordenadas
-    const latNum = parseFloat(rawLat);
-    const lonNum = parseFloat(rawLon);
+    // Parsear coordenadas preservando todos los decimales
+    const latNum = parsearCoordenada(rawLat);
+    const lonNum = parsearCoordenada(rawLon);
 
-    if (rawLat != null && (isNaN(latNum) || latNum < -90 || latNum > 90)) {
+    if (latNum == null || latNum < -90 || latNum > 90) {
       errores.push({
         fila: numFila, codigo: codigoStr, campo: 'LAT',
         mensaje: `LAT="${rawLat}" no es una coordenada válida (-90 a 90).`, nivel: 'error'
@@ -370,7 +396,7 @@ async function importarExcel(): Promise<void> {
       filaValida = false;
     }
 
-    if (rawLon != null && (isNaN(lonNum) || lonNum < -180 || lonNum > 180)) {
+    if (lonNum == null || lonNum < -180 || lonNum > 180) {
       errores.push({
         fila: numFila, codigo: codigoStr, campo: 'LON',
         mensaje: `LON="${rawLon}" no es una coordenada válida (-180 a 180).`, nivel: 'error'
