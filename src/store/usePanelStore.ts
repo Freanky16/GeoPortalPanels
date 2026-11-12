@@ -70,6 +70,7 @@ interface PanelStore {
   seleccionarPanel: (panel: Panel | null) => void;
   toggleDetalle: () => void;
   cerrarDetalle: () => void;
+  setEsGestor: (val: boolean) => void;
 }
 
 export const usePanelStore = create<PanelStore>((set) => ({
@@ -78,6 +79,8 @@ export const usePanelStore = create<PanelStore>((set) => ({
   isLoading: true,
   error: null,
   esGestor: false,
+
+  setEsGestor: (val) => set({ esGestor: val }),
 
   panelSeleccionado: null,
   mostrarDetalle: false,

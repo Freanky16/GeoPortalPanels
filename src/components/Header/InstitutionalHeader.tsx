@@ -9,6 +9,7 @@ import { useFilterStore } from '@/store/useFilterStore';
 import { Panel } from '@/types';
 import * as XLSX from 'xlsx';
 import { ESTADO_LABELS } from '@/lib/constants';
+import AccesoTecnicoModal from '../Auth/AccesoTecnicoModal';
 
 export default function InstitutionalHeader() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -16,6 +17,7 @@ export default function InstitutionalHeader() {
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [coordNotFound, setCoordNotFound] = useState(false);
+  const [modalTecnicoOpen, setModalTecnicoOpen] = useState(false);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
 
   // Stores
@@ -23,6 +25,8 @@ export default function InstitutionalHeader() {
   const isLoading = usePanelStore((state) => state.isLoading);
   const fetchData = usePanelStore((state) => state.fetchData);
   const seleccionarPanel = usePanelStore((state) => state.seleccionarPanel);
+  const esGestor = usePanelStore((state) => state.esGestor);
+  const setEsGestor = usePanelStore((state) => state.setEsGestor);
 
   const filtrosPanelAbierto = useUIStore((state) => state.filtrosPanelAbierto);
   const toggleFiltrosPanel = useUIStore((state) => state.toggleFiltrosPanel);
@@ -427,6 +431,38 @@ export default function InstitutionalHeader() {
           <span className={styles.btnLabel}>Métricas</span>
         </button>
 
+        {/* Botón Acceso Técnico (Doble Llave Institucional) */}
+        {esGestor ? (
+          <button
+            className={`${styles.headerBtn} ${styles.tecnicoActivoBtn}`}
+            onClick={() => setEsGestor(false)}
+            title="Sesión Técnica Activa · Clic para salir"
+          >
+            <span className={styles.pulseDotTecnico} />
+            <span className={styles.btnLabel}>Modo Técnico</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        ) : (
+          <button
+            className={styles.headerBtn}
+            onClick={() => setModalTecnicoOpen(true)}
+            title="Acceso Técnico Municipal (Doble Llave)"
+            aria-label="Acceso Técnico"
+          >
+            {/* Ícono sobrio de Credencial de Acreditación (no llave) */}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="16" rx="3" />
+              <circle cx="12" cy="10" r="2.5" />
+              <path d="M7 17c0-2 2.2-3 5-3s5 1 5 3" />
+              <line x1="9" y1="2" x2="15" y2="2" />
+            </svg>
+            <span className={styles.btnLabel}>Acceso Técnico</span>
+          </button>
+        )}
+
         {/* Menú de Tres Puntos (Herramientas GIS) */}
         <button
           className={`${styles.headerBtn} ${styles.iconBtn} ${showToolsMenu ? styles.headerBtnActive : ''}`}
@@ -512,6 +548,12 @@ export default function InstitutionalHeader() {
           </div>
         )}
       </div>
+
+      {/* Modal de Acceso Técnico (Doble Llave) */}
+      <AccesoTecnicoModal
+        isOpen={modalTecnicoOpen}
+        onClose={() => setModalTecnicoOpen(false)}
+      />
     </header>
   );
 }
