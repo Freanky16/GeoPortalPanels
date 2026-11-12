@@ -32,11 +32,6 @@ const RADIO_ALL_BUFFER_SOURCE_ID = 'radio-all-buffer-source';
 const RADIO_ALL_BUFFER_FILL_LAYER = 'radio-all-buffer-fill';
 const RADIO_ALL_BUFFER_LINE_LAYER = 'radio-all-buffer-line';
 
-// Trazado Suave del Corredor Vial (Glow Corridor)
-const CORREDOR_SOURCE_ID = 'corredor-source';
-const CORREDOR_GLOW_LAYER = 'corredor-glow-layer';
-const CORREDOR_LINE_LAYER = 'corredor-line-layer';
-
 /**
  * Genera un polígono GeoJSON circular con radio en metros
  */
@@ -426,48 +421,6 @@ export default function MapView() {
         RADIO_BUFFER_FILL_LAYER
       );
     }
-
-    // 9. Capa y fuente: Trazado Conectivo del Corredor Vial Enfocado
-    if (!mapInstance.getSource(CORREDOR_SOURCE_ID)) {
-      mapInstance.addSource(CORREDOR_SOURCE_ID, {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      });
-    }
-
-    if (!mapInstance.getLayer(CORREDOR_GLOW_LAYER)) {
-      mapInstance.addLayer(
-        {
-          id: CORREDOR_GLOW_LAYER,
-          type: 'line',
-          source: CORREDOR_SOURCE_ID,
-          paint: {
-            'line-color': '#0284C7',
-            'line-width': 9,
-            'line-blur': 3,
-            'line-opacity': 0.35,
-          },
-        },
-        PANELES_HALO_LAYER
-      );
-    }
-
-    if (!mapInstance.getLayer(CORREDOR_LINE_LAYER)) {
-      mapInstance.addLayer(
-        {
-          id: CORREDOR_LINE_LAYER,
-          type: 'line',
-          source: CORREDOR_SOURCE_ID,
-          paint: {
-            'line-color': '#38BDF8',
-            'line-width': 2.8,
-            'line-opacity': 0.85,
-            'line-dasharray': [3, 1],
-          },
-        },
-        PANELES_HALO_LAYER
-      );
-    }
   }, []);
 
   /**
@@ -746,67 +699,63 @@ export default function MapView() {
     setTimeout(() => clearFlyTo(), 1200);
   }, [flyToTarget, mapReady, clearFlyTo]);
 
-  // 5.5. Encuadre exacto (fitBounds), trazado de línea y realce de paneles del Corredor Vial Activo
+  // 5.5. Encuadre exacto (fitBounds) y realce de paneles del Corredor Vial Activo
   useEffect(() => {
     if (!mapReady || !map.current) return;
-    const source = map.current.getSource(CORREDOR_SOURCE_ID) as maplibregl.GeoJSONSource;
 
     if (corredorActivo && corredorActivo.paneles.length > 0) {
-      // 1. Coordenadas de los paneles de esta vía para la línea
-      const coords = corredorActivo.paneles
-        .filter(p => typeof p.longitud === 'number' && typeof p.latitud === 'number' && !isNaN(p.longitud) && !isNaN(p.latitud))
-        .map(p => [p.longitud, p.latitud] as [number, number]);
-
-      if (source && coords.length >= 2) {
-        source.setData({
-          type: 'FeatureCollection',
-          features: [
-            {
-              type: 'Feature',
-              geometry: {
-                type: 'LineString',
-                coordinates: coords,
-              },
-              properties: { nombre: corredorActivo.nombre },
-            },
-          ],
-        });
-      } else if (source) {
-        source.setData({ type: 'FeatureCollection', features: [] });
-      }
-
-      // 2. Encuadre inteligente fitBounds
+      // 1. Encuadre inteligente fitBounds hacia el tramo de la arteria
       try {
         map.current.fitBounds(corredorActivo.bounds, {
-          padding: 85,
+          padding: 95,
           duration: 1200,
           maxZoom: 16,
         });
       } catch {
-        // Fallback si bounds fuera inválido
+        // Fallback
       }
 
-      // 3. Resaltar los paneles del corredor y atenuar suavemente los demás
+      // 2. Resaltar los paneles del corredor y atenuar suavemente los demás
       if (map.current.getLayer(PANELES_POINT_LAYER)) {
-        const codigosCorredor = corredorActivo.paneles.map(p => p.codigo);
+        const codigosCorredor = corredorActivo.paneles.map((p) => p.codigo);
         map.current.setPaintProperty(PANELES_POINT_LAYER, 'circle-opacity', [
           'case',
           ['in', ['get', 'codigo'], ['literal', codigosCorredor]],
           1.0,
-          0.18, // atenuado suave para el resto de la ciudad
+          0.12, // atenuado suave para el resto de la ciudad
         ]);
         map.current.setPaintProperty(PANELES_POINT_LAYER, 'circle-stroke-opacity', [
           'case',
           ['in', ['get', 'codigo'], ['literal', codigosCorredor]],
           0.95,
-          0.15,
+          0.1,
+        ]);
+        // Incrementar ligeramente el radio de los puntos enfocados para darles protagonismo
+        map.current.setPaintProperty(PANELES_POINT_LAYER, 'circle-radius', [
+          'case',
+          ['in', ['get', 'codigo'], ['literal', codigosCorredor]],
+          [
+            'interpolate', ['linear'], ['zoom'],
+            9, 3.0,
+            11, 4.5,
+            13, 6.5,
+            15, 8.5,
+            17, 10.5,
+            19, 12.5,
+          ],
+          [
+            'interpolate', ['linear'], ['zoom'],
+            9, 1.0,
+            11, 2.0,
+            13, 3.8,
+            15, 5.2,
+            17, 7.0,
+            19, 9.0,
+          ],
         ]);
       }
     } else {
-      // Sin corredor activo: limpiar línea y restaurar opacidades completas
-      if (source) {
-        source.setData({ type: 'FeatureCollection', features: [] });
-      }
+      // Sin corredor activo: restaurar opacidades y radios normales de toda la ciudad
       if (map.current.getLayer(PANELES_POINT_LAYER)) {
         map.current.setPaintProperty(PANELES_POINT_LAYER, 'circle-opacity', [
           'interpolate', ['linear'], ['zoom'],
@@ -821,6 +770,15 @@ export default function MapView() {
           9, 0.0,
           11, 0.6,
           13, 0.95,
+        ]);
+        map.current.setPaintProperty(PANELES_POINT_LAYER, 'circle-radius', [
+          'interpolate', ['linear'], ['zoom'],
+          9, 1.0,
+          11, 2.0,
+          13, 3.8,
+          15, 5.2,
+          17, 7.0,
+          19, 9.0,
         ]);
       }
     }

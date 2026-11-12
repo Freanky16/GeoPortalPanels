@@ -10,45 +10,24 @@ export interface ViaRanked {
   paneles: Panel[];
   centroide: [number, number]; // [lng, lat]
   bounds: [[number, number], [number, number]]; // [[minLng, minLat], [maxLng, maxLat]]
-  coordenadasOrdenadas: [number, number][]; // Coordenadas para trazar la línea del corredor
 }
-
-// Lista negra estricta de nombres que NO son vías reales válidas
-const NOMBRES_INVALIDOS = new Set([
-  'CALLE',
-  'PRINCIPAL',
-  'CRUCE',
-  'ALTURA',
-  'FRENTE',
-  'CDRA',
-  'CUADRA',
-  'LIMA',
-  'AVENIDA',
-  'AV',
-  'JR',
-  'JIRON',
-  'PASAJE',
-  'PSJE',
-  'SIN DATO',
-  'AUTOPISTA',
-  'PARQUE',
-  'SIN NOMBRE',
-]);
 
 /**
  * Normaliza y extrae el nombre oficial del corredor o vía
- * a partir del campo libre de dirección municipal.
+ * a partir de la dirección municipal.
+ * Si la dirección está vacía o pendiente, retorna categoría para auditoría.
  */
-export function normalizarNombreVia(rawDireccion: string | null | undefined): { nombre: string; categoria: 'eje' | 'calle' } | null {
-  if (!rawDireccion) return null;
+export function normalizarNombreVia(rawDireccion: string | null | undefined): { nombre: string; categoria: 'eje' | 'calle' } {
+  if (!rawDireccion || rawDireccion.trim().length === 0 || /^(SIN\s+DATO|N\/A|-|\.)$/i.test(rawDireccion.trim())) {
+    return { nombre: 'Vías en proceso de auditoría', categoria: 'calle' };
+  }
 
   let d = rawDireccion.trim().toUpperCase();
-  if (d.length < 3) return null;
 
   // Remover prefijos de referencias relativas
   d = d.replace(/^(A\s+\d+\s+MTRS?\.?\s+(?:DEL\s+CRUCE\s+CON\s+)?|ALTURA\s+|ALT\.?\s+|FRENTE\s+AL\s+PREDIO\s+\d+|AUXILIAR\s+DE\s+LA\s+|AUXILIAR\s+)/i, '');
 
-  // 1. Detección de grandes autopistas y ejes metropolitanos emblemáticos
+  // 1. Grandes ejes y autopistas emblemáticas
   if (/PANAMERICANA\s+SUR/i.test(d)) {
     return { nombre: 'Panamericana Sur', categoria: 'eje' };
   }
@@ -70,7 +49,7 @@ export function normalizarNombreVia(rawDireccion: string | null | undefined): { 
   const partes = d.split(delimitadores);
   let primeraParte = partes[0].trim();
 
-  if (primeraParte.length < 4 && partes.length > 1) {
+  if (primeraParte.length < 3 && partes.length > 1) {
     primeraParte = partes[1].trim();
   }
 
@@ -80,8 +59,8 @@ export function normalizarNombreVia(rawDireccion: string | null | undefined): { 
   // 3. Patrones de Avenidas y Corredores
   const matchAv = primeraParte.match(/^(?:AV[.,]?\s+|AVENIDA\s+|AUTOPISTA\s+)(.+)/i);
   if (matchAv) {
-    let nombre = limpiarNombreVia(matchAv[1].trim());
-    if (esNombreValido(nombre)) {
+    const nombre = limpiarNombreVia(matchAv[1]);
+    if (nombre.length >= 2 && !esPalabraGenerica(nombre)) {
       return { nombre: `Av. ${toTitleCase(nombre)}`, categoria: 'eje' };
     }
   }
@@ -89,8 +68,8 @@ export function normalizarNombreVia(rawDireccion: string | null | undefined): { 
   // 4. Patrones de Jirones
   const matchJr = primeraParte.match(/^(?:JR[.,]?\s+|JIR[OÓ]N\s+)(.+)/i);
   if (matchJr) {
-    let nombre = limpiarNombreVia(matchJr[1].trim());
-    if (esNombreValido(nombre)) {
+    const nombre = limpiarNombreVia(matchJr[1]);
+    if (nombre.length >= 2 && !esPalabraGenerica(nombre)) {
       return { nombre: `Jr. ${toTitleCase(nombre)}`, categoria: 'calle' };
     }
   }
@@ -98,8 +77,8 @@ export function normalizarNombreVia(rawDireccion: string | null | undefined): { 
   // 5. Patrones de Calles
   const matchCa = primeraParte.match(/^(?:CA[.,]?\s+|CALLE\s+)(.+)/i);
   if (matchCa) {
-    let nombre = limpiarNombreVia(matchCa[1].trim());
-    if (esNombreValido(nombre)) {
+    const nombre = limpiarNombreVia(matchCa[1]);
+    if (nombre.length >= 2 && !esPalabraGenerica(nombre)) {
       return { nombre: `Calle ${toTitleCase(nombre)}`, categoria: 'calle' };
     }
   }
@@ -107,8 +86,8 @@ export function normalizarNombreVia(rawDireccion: string | null | undefined): { 
   // 6. Patrones de Pasajes
   const matchPsje = primeraParte.match(/^(?:PSJE[.,]?\s+|PASAJE\s+)(.+)/i);
   if (matchPsje) {
-    let nombre = limpiarNombreVia(matchPsje[1].trim());
-    if (esNombreValido(nombre)) {
+    const nombre = limpiarNombreVia(matchPsje[1]);
+    if (nombre.length >= 2 && !esPalabraGenerica(nombre)) {
       return { nombre: `Psje. ${toTitleCase(nombre)}`, categoria: 'calle' };
     }
   }
@@ -116,14 +95,12 @@ export function normalizarNombreVia(rawDireccion: string | null | undefined): { 
   // 7. Avenidas conocidas sin prefijo explícito
   if (/^(AREQUIPA|ARAMBUR[UÚ]|SALAVERRY|BRASIL|FAUCETT|VENEZUELA|BENAVÍDES|BENAVIDES|BOL[IÍ]VAR|COLMENA|GRAU|TACNA|ALFONSO\s+UGARTE|T[UÚ]PAC\s+AMARU|CANAD[AÁ]|UNIVERSITARIA|LA\s+MARINA)/i.test(primeraParte)) {
     const nombre = limpiarNombreVia(primeraParte);
-    if (esNombreValido(nombre)) {
-      return { nombre: `Av. ${toTitleCase(nombre)}`, categoria: 'eje' };
-    }
+    return { nombre: `Av. ${toTitleCase(nombre)}`, categoria: 'eje' };
   }
 
-  // Descarte: si es una calle con nombre válido de más de 4 letras
+  // 8. Caso general: Si el texto contiene un nombre sustancial
   const nombreLimpio = limpiarNombreVia(primeraParte);
-  if (esNombreValido(nombreLimpio)) {
+  if (nombreLimpio.length >= 3 && !esPalabraGenerica(nombreLimpio)) {
     const esEje = /AV|PROLONGACI|CARRETERA|AUTOPISTA/i.test(nombreLimpio);
     return {
       nombre: esEje ? `Av. ${toTitleCase(nombreLimpio)}` : `Calle ${toTitleCase(nombreLimpio)}`,
@@ -131,17 +108,15 @@ export function normalizarNombreVia(rawDireccion: string | null | undefined): { 
     };
   }
 
-  return null;
+  return { nombre: 'Vías en proceso de auditoría', categoria: 'calle' };
 }
 
-function esNombreValido(nombre: string): boolean {
-  if (!nombre) return false;
-  const upper = nombre.toUpperCase().trim();
-  if (upper.length < 3) return false;
-  if (NOMBRES_INVALIDOS.has(upper)) return false;
-  // Si solo son números o signos
-  if (/^[\d\s._\-#]+$/.test(upper)) return false;
-  return true;
+function esPalabraGenerica(str: string): boolean {
+  const s = str.toUpperCase().trim();
+  return [
+    'CALLE', 'PRINCIPAL', 'CRUCE', 'ALTURA', 'FRENTE', 'CDRA', 'CUADRA',
+    'AVENIDA', 'AV', 'JR', 'JIRON', 'PASAJE', 'PSJE', 'LOTE', 'URB',
+  ].includes(s);
 }
 
 function limpiarNombreVia(str: string): string {
@@ -167,15 +142,15 @@ function toTitleCase(str: string): string {
 
 /**
  * Procesa todos los paneles filtrados y genera el ranking Top N
- * agrupado, con bounds y secuencia de coordenadas para dibujar el corredor vial.
+ * agrupado y con cálculo de bounds exacto para el zoom del mapa.
  */
 export function calcularRankingVias(paneles: Panel[], categoria: CategoriaVia = 'todas', limite = 10): ViaRanked[] {
   const grupos = new Map<string, { categoria: 'eje' | 'calle'; paneles: Panel[] }>();
 
   for (const panel of paneles) {
     const viaInfo = normalizarNombreVia(panel.direccion);
-    if (!viaInfo) continue;
 
+    // Si el usuario filtra por categoría
     if (categoria === 'ejes' && viaInfo.categoria !== 'eje') continue;
     if (categoria === 'calles' && viaInfo.categoria !== 'calle') continue;
 
@@ -203,8 +178,6 @@ export function calcularRankingVias(paneles: Panel[], categoria: CategoriaVia = 
     let minLat = Infinity;
     let maxLat = -Infinity;
 
-    const puntosValidos: [number, number][] = [];
-
     for (const p of items) {
       if (typeof p.longitud === 'number' && typeof p.latitud === 'number' && !isNaN(p.longitud) && !isNaN(p.latitud)) {
         sumLng += p.longitud;
@@ -215,8 +188,6 @@ export function calcularRankingVias(paneles: Panel[], categoria: CategoriaVia = 
         if (p.longitud > maxLng) maxLng = p.longitud;
         if (p.latitud < minLat) minLat = p.latitud;
         if (p.latitud > maxLat) maxLat = p.latitud;
-
-        puntosValidos.push([p.longitud, p.latitud]);
       }
     }
 
@@ -224,19 +195,8 @@ export function calcularRankingVias(paneles: Panel[], categoria: CategoriaVia = 
       ? [sumLng / validos, sumLat / validos]
       : [-77.0428, -12.0464];
 
-    // Ordenar los puntos a lo largo del eje principal para dibujar una línea de corredor prolija
-    // Si la dispersión en latitud es mayor que en longitud, ordenar por latitud, sino por longitud
-    const spanLat = maxLat - minLat;
-    const spanLng = maxLng - minLng;
-    if (spanLat > spanLng) {
-      puntosValidos.sort((a, b) => a[1] - b[1]);
-    } else {
-      puntosValidos.sort((a, b) => a[0] - b[0]);
-    }
-
-    // Pequeño margen (padding) al bounds para que no queden los paneles pegados al borde de la pantalla
-    const padLng = Math.max((maxLng - minLng) * 0.1, 0.003);
-    const padLat = Math.max((maxLat - minLat) * 0.1, 0.003);
+    const padLng = Math.max((maxLng - minLng) * 0.12, 0.004);
+    const padLat = Math.max((maxLat - minLat) * 0.12, 0.004);
 
     const bounds: [[number, number], [number, number]] = [
       [minLng - padLng, minLat - padLat],
@@ -251,7 +211,6 @@ export function calcularRankingVias(paneles: Panel[], categoria: CategoriaVia = 
       paneles: items,
       centroide,
       bounds,
-      coordenadasOrdenadas: puntosValidos,
     });
   }
 
