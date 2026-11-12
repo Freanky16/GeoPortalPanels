@@ -3,6 +3,7 @@
 import React from 'react';
 import styles from './DashboardPanel.module.css';
 import RankingVias from './RankingVias';
+import DensidadDistritos from './DensidadDistritos';
 import StatsCards from './StatsCards';
 import { useUIStore } from '@/store/useUIStore';
 
@@ -37,8 +38,13 @@ export default function DashboardPanel() {
         {/* Fila Principal: Métricas Territoriales Estratégicas */}
         <div className={styles.metricsGrid}>
           {/* Métrica A: Ranking de Ejes y Vías (Interactivo) */}
-          <div className={styles.metricColumnPrimary}>
+          <div className={styles.metricColumn}>
             <RankingVias />
+          </div>
+
+          {/* Métrica B: Densidad por Distrito (Top 10) */}
+          <div className={styles.metricColumn}>
+            <DensidadDistritos />
           </div>
         </div>
       </div>

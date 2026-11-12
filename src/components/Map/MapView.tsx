@@ -35,6 +35,7 @@ const RADIO_ALL_BUFFER_LINE_LAYER = 'radio-all-buffer-line';
 // Parpadeo Multitudinario de Corredor Vial (Multi-Beacon Pulse WebGL)
 const CORREDOR_BEACONS_SOURCE_ID = 'corredor-beacons-source';
 const CORREDOR_PULSE_OUTER_LAYER = 'corredor-pulse-outer';
+const CORREDOR_PULSE_MID_LAYER = 'corredor-pulse-mid';
 const CORREDOR_PULSE_INNER_LAYER = 'corredor-pulse-inner';
 
 /**
@@ -427,7 +428,7 @@ export default function MapView() {
       );
     }
 
-    // 9. Capa y fuente: Parpadeo Multitudinario (Multi-Beacon Pulse WebGL)
+    // 9. Capa y fuente: Parpadeo Multitudinario (Multi-Beacon Pulse WebGL - Triple Onda)
     if (!mapInstance.getSource(CORREDOR_BEACONS_SOURCE_ID)) {
       mapInstance.addSource(CORREDOR_BEACONS_SOURCE_ID, {
         type: 'geojson',
@@ -435,7 +436,7 @@ export default function MapView() {
       });
     }
 
-    // Onda exterior del parpadeo (Halo amplio y difuso que escala con el zoom)
+    // Onda 3: Exterior expansiva difusa
     if (!mapInstance.getLayer(CORREDOR_PULSE_OUTER_LAYER)) {
       mapInstance.addLayer(
         {
@@ -445,12 +446,12 @@ export default function MapView() {
           paint: {
             'circle-radius': [
               'interpolate', ['linear'], ['zoom'],
-              9, 3.5,
-              11, 7.0,
-              13, 13.0,
-              15, 20.0,
-              17, 30.0,
-              19, 42.0,
+              9, 8.0,
+              11, 13.0,
+              13, 20.0,
+              15, 29.0,
+              17, 40.0,
+              19, 54.0,
             ],
             'circle-color': [
               'match',
@@ -460,15 +461,50 @@ export default function MapView() {
               'vencido', ESTADO_COLORS.vencido,
               ESTADO_COLORS.sin_dato,
             ],
-            'circle-opacity': 0.45,
-            'circle-blur': 0.75,
+            'circle-opacity': 0.35,
+            'circle-blur': 0.85,
           },
         },
         PANELES_HALO_LAYER
       );
     }
 
-    // Onda interior del parpadeo (Anillo concentrado de alta energía)
+    // Onda 2: Media semitranslúcida
+    if (!mapInstance.getLayer(CORREDOR_PULSE_MID_LAYER)) {
+      mapInstance.addLayer(
+        {
+          id: CORREDOR_PULSE_MID_LAYER,
+          type: 'circle',
+          source: CORREDOR_BEACONS_SOURCE_ID,
+          paint: {
+            'circle-radius': [
+              'interpolate', ['linear'], ['zoom'],
+              9, 5.5,
+              11, 9.0,
+              13, 14.0,
+              15, 21.0,
+              17, 29.0,
+              19, 39.0,
+            ],
+            'circle-color': [
+              'match',
+              ['get', 'estadoContrato'],
+              'vigente', ESTADO_COLORS.vigente,
+              'por_vencer', ESTADO_COLORS.por_vencer,
+              'vencido', ESTADO_COLORS.vencido,
+              ESTADO_COLORS.sin_dato,
+            ],
+            'circle-opacity': 0.55,
+            'circle-stroke-width': 1.0,
+            'circle-stroke-color': '#FFFFFF',
+            'circle-stroke-opacity': 0.6,
+          },
+        },
+        PANELES_HALO_LAYER
+      );
+    }
+
+    // Onda 1: Núcleo brillante concentrado
     if (!mapInstance.getLayer(CORREDOR_PULSE_INNER_LAYER)) {
       mapInstance.addLayer(
         {
@@ -478,12 +514,12 @@ export default function MapView() {
           paint: {
             'circle-radius': [
               'interpolate', ['linear'], ['zoom'],
-              9, 2.0,
-              11, 4.5,
-              13, 8.5,
-              15, 13.0,
+              9, 3.5,
+              11, 6.0,
+              13, 9.5,
+              15, 14.0,
               17, 19.0,
-              19, 26.0,
+              19, 25.0,
             ],
             'circle-color': [
               'match',
@@ -493,10 +529,10 @@ export default function MapView() {
               'vencido', ESTADO_COLORS.vencido,
               ESTADO_COLORS.sin_dato,
             ],
-            'circle-opacity': 0.65,
+            'circle-opacity': 0.85,
             'circle-stroke-width': 1.5,
             'circle-stroke-color': '#FFFFFF',
-            'circle-stroke-opacity': 0.85,
+            'circle-stroke-opacity': 0.95,
           },
         },
         PANELES_HALO_LAYER
@@ -798,13 +834,17 @@ export default function MapView() {
       const animatePulse = (currentTime: number) => {
         if (!map.current) return;
         const elapsed = (currentTime - startTime) / 1000;
-        // Onda periódica de respiración luminosa (ciclo de 1.4 segundos)
-        const wave = 0.5 + 0.5 * Math.sin((elapsed * 2 * Math.PI) / 1.4);
-        const outerOpacity = 0.2 + 0.55 * wave;
-        const innerOpacity = 0.35 + 0.6 * wave;
+        // Onda periódica de respiración luminosa (ciclo dinámico de 1.1s)
+        const wave = 0.5 + 0.5 * Math.sin((elapsed * 2 * Math.PI) / 1.1);
+        const outerOpacity = 0.25 + 0.65 * wave;
+        const midOpacity = 0.35 + 0.6 * wave;
+        const innerOpacity = 0.55 + 0.45 * wave;
 
         if (map.current.getLayer(CORREDOR_PULSE_OUTER_LAYER)) {
           map.current.setPaintProperty(CORREDOR_PULSE_OUTER_LAYER, 'circle-opacity', outerOpacity);
+        }
+        if (map.current.getLayer(CORREDOR_PULSE_MID_LAYER)) {
+          map.current.setPaintProperty(CORREDOR_PULSE_MID_LAYER, 'circle-opacity', midOpacity);
         }
         if (map.current.getLayer(CORREDOR_PULSE_INNER_LAYER)) {
           map.current.setPaintProperty(CORREDOR_PULSE_INNER_LAYER, 'circle-opacity', innerOpacity);
