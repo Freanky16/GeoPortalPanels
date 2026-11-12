@@ -10,8 +10,8 @@ interface AccesoTecnicoModalProps {
 }
 
 // Credenciales predeterminadas de ingeniería (modificables por variables de entorno)
-const DEFAULT_PIN = process.env.NEXT_PUBLIC_TECNICO_PIN || '202611';
-const DEFAULT_CLAVE = process.env.NEXT_PUBLIC_TECNICO_CLAVE || 'MML2026';
+const DEFAULT_PIN = process.env.NEXT_PUBLIC_TECNICO_PIN || '080816';
+const DEFAULT_CLAVE = process.env.NEXT_PUBLIC_TECNICO_CLAVE || 'ROSES_FRENZ';
 
 export default function AccesoTecnicoModal({ isOpen, onClose }: AccesoTecnicoModalProps) {
   const [paso, setPaso] = useState<1 | 2>(1);
@@ -168,7 +168,7 @@ export default function AccesoTecnicoModal({ isOpen, onClose }: AccesoTecnicoMod
           {paso === 1 ? (
             <div>
               <p className={styles.promptText}>
-                Ingresa el <strong>PIN de Identificación</strong> de 6 dígitos asignado para operaciones en campo y gabinete:
+                Ingresa el <strong>PIN de Identificación</strong> de 6 dígitos asignado para las operaciones:
               </p>
 
               <div className={styles.pinContainer}>
