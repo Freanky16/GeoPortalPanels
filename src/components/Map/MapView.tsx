@@ -32,6 +32,11 @@ const RADIO_ALL_BUFFER_SOURCE_ID = 'radio-all-buffer-source';
 const RADIO_ALL_BUFFER_FILL_LAYER = 'radio-all-buffer-fill';
 const RADIO_ALL_BUFFER_LINE_LAYER = 'radio-all-buffer-line';
 
+// Trazado Suave del Corredor Vial (Glow Corridor)
+const CORREDOR_SOURCE_ID = 'corredor-source';
+const CORREDOR_GLOW_LAYER = 'corredor-glow-layer';
+const CORREDOR_LINE_LAYER = 'corredor-line-layer';
+
 /**
  * Genera un polígono GeoJSON circular con radio en metros
  */
@@ -165,6 +170,7 @@ export default function MapView() {
   const mostrarTodosRadios100m = useUIStore((state) => state.mostrarTodosRadios100m);
   const panelSeleccionado = usePanelStore((state) => state.panelSeleccionado);
   const seleccionarPanel = usePanelStore((state) => state.seleccionarPanel);
+  const corredorActivo = useUIStore((state) => state.corredorActivo);
 
   // Hook que retorna los paneles filtrados en tiempo real
   const panelesFiltrados = useFilteredPanels();
@@ -418,6 +424,48 @@ export default function MapView() {
           },
         },
         RADIO_BUFFER_FILL_LAYER
+      );
+    }
+
+    // 9. Capa y fuente: Trazado Conectivo del Corredor Vial Enfocado
+    if (!mapInstance.getSource(CORREDOR_SOURCE_ID)) {
+      mapInstance.addSource(CORREDOR_SOURCE_ID, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+    }
+
+    if (!mapInstance.getLayer(CORREDOR_GLOW_LAYER)) {
+      mapInstance.addLayer(
+        {
+          id: CORREDOR_GLOW_LAYER,
+          type: 'line',
+          source: CORREDOR_SOURCE_ID,
+          paint: {
+            'line-color': '#0284C7',
+            'line-width': 9,
+            'line-blur': 3,
+            'line-opacity': 0.35,
+          },
+        },
+        PANELES_HALO_LAYER
+      );
+    }
+
+    if (!mapInstance.getLayer(CORREDOR_LINE_LAYER)) {
+      mapInstance.addLayer(
+        {
+          id: CORREDOR_LINE_LAYER,
+          type: 'line',
+          source: CORREDOR_SOURCE_ID,
+          paint: {
+            'line-color': '#38BDF8',
+            'line-width': 2.8,
+            'line-opacity': 0.85,
+            'line-dasharray': [3, 1],
+          },
+        },
+        PANELES_HALO_LAYER
       );
     }
   }, []);
@@ -697,6 +745,86 @@ export default function MapView() {
     });
     setTimeout(() => clearFlyTo(), 1200);
   }, [flyToTarget, mapReady, clearFlyTo]);
+
+  // 5.5. Encuadre exacto (fitBounds), trazado de línea y realce de paneles del Corredor Vial Activo
+  useEffect(() => {
+    if (!mapReady || !map.current) return;
+    const source = map.current.getSource(CORREDOR_SOURCE_ID) as maplibregl.GeoJSONSource;
+
+    if (corredorActivo && corredorActivo.paneles.length > 0) {
+      // 1. Coordenadas de los paneles de esta vía para la línea
+      const coords = corredorActivo.paneles
+        .filter(p => typeof p.longitud === 'number' && typeof p.latitud === 'number' && !isNaN(p.longitud) && !isNaN(p.latitud))
+        .map(p => [p.longitud, p.latitud] as [number, number]);
+
+      if (source && coords.length >= 2) {
+        source.setData({
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'LineString',
+                coordinates: coords,
+              },
+              properties: { nombre: corredorActivo.nombre },
+            },
+          ],
+        });
+      } else if (source) {
+        source.setData({ type: 'FeatureCollection', features: [] });
+      }
+
+      // 2. Encuadre inteligente fitBounds
+      try {
+        map.current.fitBounds(corredorActivo.bounds, {
+          padding: 85,
+          duration: 1200,
+          maxZoom: 16,
+        });
+      } catch {
+        // Fallback si bounds fuera inválido
+      }
+
+      // 3. Resaltar los paneles del corredor y atenuar suavemente los demás
+      if (map.current.getLayer(PANELES_POINT_LAYER)) {
+        const codigosCorredor = corredorActivo.paneles.map(p => p.codigo);
+        map.current.setPaintProperty(PANELES_POINT_LAYER, 'circle-opacity', [
+          'case',
+          ['in', ['get', 'codigo'], ['literal', codigosCorredor]],
+          1.0,
+          0.18, // atenuado suave para el resto de la ciudad
+        ]);
+        map.current.setPaintProperty(PANELES_POINT_LAYER, 'circle-stroke-opacity', [
+          'case',
+          ['in', ['get', 'codigo'], ['literal', codigosCorredor]],
+          0.95,
+          0.15,
+        ]);
+      }
+    } else {
+      // Sin corredor activo: limpiar línea y restaurar opacidades completas
+      if (source) {
+        source.setData({ type: 'FeatureCollection', features: [] });
+      }
+      if (map.current.getLayer(PANELES_POINT_LAYER)) {
+        map.current.setPaintProperty(PANELES_POINT_LAYER, 'circle-opacity', [
+          'interpolate', ['linear'], ['zoom'],
+          8, 0.0,
+          9, 0.4,
+          11, 0.85,
+          13, 0.95,
+          15, 1.0,
+        ]);
+        map.current.setPaintProperty(PANELES_POINT_LAYER, 'circle-stroke-opacity', [
+          'interpolate', ['linear'], ['zoom'],
+          9, 0.0,
+          11, 0.6,
+          13, 0.95,
+        ]);
+      }
+    }
+  }, [corredorActivo, mapReady]);
 
   // 6. Radio Normativo de 100 metros (Ordenanza MML - separación mínima entre elementos)
   useEffect(() => {

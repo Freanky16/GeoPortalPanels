@@ -9,7 +9,31 @@ export interface ViaRanked {
   porcentaje: number;
   paneles: Panel[];
   centroide: [number, number]; // [lng, lat]
+  bounds: [[number, number], [number, number]]; // [[minLng, minLat], [maxLng, maxLat]]
+  coordenadasOrdenadas: [number, number][]; // Coordenadas para trazar la línea del corredor
 }
+
+// Lista negra estricta de nombres que NO son vías reales válidas
+const NOMBRES_INVALIDOS = new Set([
+  'CALLE',
+  'PRINCIPAL',
+  'CRUCE',
+  'ALTURA',
+  'FRENTE',
+  'CDRA',
+  'CUADRA',
+  'LIMA',
+  'AVENIDA',
+  'AV',
+  'JR',
+  'JIRON',
+  'PASAJE',
+  'PSJE',
+  'SIN DATO',
+  'AUTOPISTA',
+  'PARQUE',
+  'SIN NOMBRE',
+]);
 
 /**
  * Normaliza y extrae el nombre oficial del corredor o vía
@@ -21,7 +45,7 @@ export function normalizarNombreVia(rawDireccion: string | null | undefined): { 
   let d = rawDireccion.trim().toUpperCase();
   if (d.length < 3) return null;
 
-  // Remover prefijos comunes no constitutivos del nombre de vía
+  // Remover prefijos de referencias relativas
   d = d.replace(/^(A\s+\d+\s+MTRS?\.?\s+(?:DEL\s+CRUCE\s+CON\s+)?|ALTURA\s+|ALT\.?\s+|FRENTE\s+AL\s+PREDIO\s+\d+|AUXILIAR\s+DE\s+LA\s+|AUXILIAR\s+)/i, '');
 
   // 1. Detección de grandes autopistas y ejes metropolitanos emblemáticos
@@ -41,26 +65,23 @@ export function normalizarNombreVia(rawDireccion: string | null | undefined): { 
     return { nombre: 'Circuito de Playas (Costa Verde)', categoria: 'eje' };
   }
 
-  // 2. Separar por cruces o referencias secundarias (/ , CON , ESQ , FRENTE , CDRA , N° , KM)
+  // 2. Separar por cruces o referencias secundarias
   const delimitadores = /\s*(?:\/|\s+CON\s+|\s+ESQ\.?\s+|\s+CRUCE\s+|\s+FRENTE\s+|\s+FTE\.?\s+|\s+CDRA\.?\s+|\s+CUADRA\s+|\s+KM\.?\s+|\s+N[°º]\s*|\s+#\s*|\s*\()\s*/i;
   const partes = d.split(delimitadores);
   let primeraParte = partes[0].trim();
 
-  // Si la primera parte quedó vacía o muy corta y hay segunda parte con nombre de vía
   if (primeraParte.length < 4 && partes.length > 1) {
     primeraParte = partes[1].trim();
   }
 
-  // Quitar números finales sueltos (ej. "AV. BRASIL 1613" -> "AV. BRASIL")
+  // Quitar números finales sueltos
   primeraParte = primeraParte.replace(/\s+\d+.*$/, '').trim();
 
   // 3. Patrones de Avenidas y Corredores
   const matchAv = primeraParte.match(/^(?:AV[.,]?\s+|AVENIDA\s+|AUTOPISTA\s+)(.+)/i);
   if (matchAv) {
-    let nombre = matchAv[1].trim();
-    // Limpieza de sufijos cardinales o residuales comunes
-    nombre = limpiarNombreVia(nombre);
-    if (nombre.length >= 3) {
+    let nombre = limpiarNombreVia(matchAv[1].trim());
+    if (esNombreValido(nombre)) {
       return { nombre: `Av. ${toTitleCase(nombre)}`, categoria: 'eje' };
     }
   }
@@ -69,7 +90,7 @@ export function normalizarNombreVia(rawDireccion: string | null | undefined): { 
   const matchJr = primeraParte.match(/^(?:JR[.,]?\s+|JIR[OÓ]N\s+)(.+)/i);
   if (matchJr) {
     let nombre = limpiarNombreVia(matchJr[1].trim());
-    if (nombre.length >= 3) {
+    if (esNombreValido(nombre)) {
       return { nombre: `Jr. ${toTitleCase(nombre)}`, categoria: 'calle' };
     }
   }
@@ -78,7 +99,7 @@ export function normalizarNombreVia(rawDireccion: string | null | undefined): { 
   const matchCa = primeraParte.match(/^(?:CA[.,]?\s+|CALLE\s+)(.+)/i);
   if (matchCa) {
     let nombre = limpiarNombreVia(matchCa[1].trim());
-    if (nombre.length >= 3) {
+    if (esNombreValido(nombre)) {
       return { nombre: `Calle ${toTitleCase(nombre)}`, categoria: 'calle' };
     }
   }
@@ -87,34 +108,47 @@ export function normalizarNombreVia(rawDireccion: string | null | undefined): { 
   const matchPsje = primeraParte.match(/^(?:PSJE[.,]?\s+|PASAJE\s+)(.+)/i);
   if (matchPsje) {
     let nombre = limpiarNombreVia(matchPsje[1].trim());
-    if (nombre.length >= 3) {
+    if (esNombreValido(nombre)) {
       return { nombre: `Psje. ${toTitleCase(nombre)}`, categoria: 'calle' };
     }
   }
 
-  // 7. Si no empieza explícitamente con AV/JR pero contiene un nombre conocido o término
-  // Por ejemplo: "AREQUIPA / BERNARDO ALCEDO" o "ARAMBURÚ CDRA 8"
+  // 7. Avenidas conocidas sin prefijo explícito
   if (/^(AREQUIPA|ARAMBUR[UÚ]|SALAVERRY|BRASIL|FAUCETT|VENEZUELA|BENAVÍDES|BENAVIDES|BOL[IÍ]VAR|COLMENA|GRAU|TACNA|ALFONSO\s+UGARTE|T[UÚ]PAC\s+AMARU|CANAD[AÁ]|UNIVERSITARIA|LA\s+MARINA)/i.test(primeraParte)) {
     const nombre = limpiarNombreVia(primeraParte);
-    return { nombre: `Av. ${toTitleCase(nombre)}`, categoria: 'eje' };
+    if (esNombreValido(nombre)) {
+      return { nombre: `Av. ${toTitleCase(nombre)}`, categoria: 'eje' };
+    }
   }
 
-  // Si tiene longitud razonable, clasificar por descarte
+  // Descarte: si es una calle con nombre válido de más de 4 letras
   const nombreLimpio = limpiarNombreVia(primeraParte);
-  if (nombreLimpio.length >= 4) {
+  if (esNombreValido(nombreLimpio)) {
+    const esEje = /AV|PROLONGACI|CARRETERA|AUTOPISTA/i.test(nombreLimpio);
     return {
-      nombre: toTitleCase(nombreLimpio),
-      categoria: /AV|PROLONGACI|CARRETERA|AUTOPISTA/i.test(nombreLimpio) ? 'eje' : 'calle',
+      nombre: esEje ? `Av. ${toTitleCase(nombreLimpio)}` : `Calle ${toTitleCase(nombreLimpio)}`,
+      categoria: esEje ? 'eje' : 'calle',
     };
   }
 
   return null;
 }
 
+function esNombreValido(nombre: string): boolean {
+  if (!nombre) return false;
+  const upper = nombre.toUpperCase().trim();
+  if (upper.length < 3) return false;
+  if (NOMBRES_INVALIDOS.has(upper)) return false;
+  // Si solo son números o signos
+  if (/^[\d\s._\-#]+$/.test(upper)) return false;
+  return true;
+}
+
 function limpiarNombreVia(str: string): string {
   return str
-    .replace(/\b(ESTE|OESTE|NORTE|SUR)\b$/i, '') // Unificar variantes cardinales para consolidar corredor
-    .replace(/[._\-]+$/g, '')
+    .replace(/\b(ESTE|OESTE|NORTE|SUR)\b$/i, '')
+    .replace(/^(CALLE|AV|AVENIDA|JR|JIRON|PSJE|PASAJE)\s+/i, '')
+    .replace(/[._\-#,]+$/g, '')
     .trim();
 }
 
@@ -133,7 +167,7 @@ function toTitleCase(str: string): string {
 
 /**
  * Procesa todos los paneles filtrados y genera el ranking Top N
- * agrupado y con cálculo de centroide exacto para el zoom del mapa.
+ * agrupado, con bounds y secuencia de coordenadas para dibujar el corredor vial.
  */
 export function calcularRankingVias(paneles: Panel[], categoria: CategoriaVia = 'todas', limite = 10): ViaRanked[] {
   const grupos = new Map<string, { categoria: 'eje' | 'calle'; paneles: Panel[] }>();
@@ -157,26 +191,57 @@ export function calcularRankingVias(paneles: Panel[], categoria: CategoriaVia = 
   }
 
   const totalConsiderados = Array.from(grupos.values()).reduce((sum, item) => sum + item.paneles.length, 0);
-
   const resultado: ViaRanked[] = [];
 
   for (const [nombre, { categoria: cat, paneles: items }] of grupos.entries()) {
-    // Calcular centroide medio para interactividad visual en el mapa
     let sumLng = 0;
     let sumLat = 0;
     let validos = 0;
+
+    let minLng = Infinity;
+    let maxLng = -Infinity;
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+
+    const puntosValidos: [number, number][] = [];
 
     for (const p of items) {
       if (typeof p.longitud === 'number' && typeof p.latitud === 'number' && !isNaN(p.longitud) && !isNaN(p.latitud)) {
         sumLng += p.longitud;
         sumLat += p.latitud;
         validos++;
+
+        if (p.longitud < minLng) minLng = p.longitud;
+        if (p.longitud > maxLng) maxLng = p.longitud;
+        if (p.latitud < minLat) minLat = p.latitud;
+        if (p.latitud > maxLat) maxLat = p.latitud;
+
+        puntosValidos.push([p.longitud, p.latitud]);
       }
     }
 
     const centroide: [number, number] = validos > 0
       ? [sumLng / validos, sumLat / validos]
       : [-77.0428, -12.0464];
+
+    // Ordenar los puntos a lo largo del eje principal para dibujar una línea de corredor prolija
+    // Si la dispersión en latitud es mayor que en longitud, ordenar por latitud, sino por longitud
+    const spanLat = maxLat - minLat;
+    const spanLng = maxLng - minLng;
+    if (spanLat > spanLng) {
+      puntosValidos.sort((a, b) => a[1] - b[1]);
+    } else {
+      puntosValidos.sort((a, b) => a[0] - b[0]);
+    }
+
+    // Pequeño margen (padding) al bounds para que no queden los paneles pegados al borde de la pantalla
+    const padLng = Math.max((maxLng - minLng) * 0.1, 0.003);
+    const padLat = Math.max((maxLat - minLat) * 0.1, 0.003);
+
+    const bounds: [[number, number], [number, number]] = [
+      [minLng - padLng, minLat - padLat],
+      [maxLng + padLng, maxLat + padLat],
+    ];
 
     resultado.push({
       nombre,
@@ -185,6 +250,8 @@ export function calcularRankingVias(paneles: Panel[], categoria: CategoriaVia = 
       porcentaje: totalConsiderados > 0 ? Math.round((items.length / totalConsiderados) * 100) : 0,
       paneles: items,
       centroide,
+      bounds,
+      coordenadasOrdenadas: puntosValidos,
     });
   }
 

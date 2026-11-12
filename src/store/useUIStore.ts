@@ -3,8 +3,14 @@
 // ============================================================
 
 import { create } from 'zustand';
-import { ColorScheme, MapViewState } from '@/types';
+import { ColorScheme, MapViewState, Panel } from '@/types';
 import { MapStyleKey } from '@/lib/mapConfig';
+
+export interface CorredorVialActivo {
+  nombre: string;
+  paneles: Panel[];
+  bounds: [[number, number], [number, number]]; // [[minLng, minLat], [maxLng, maxLat]]
+}
 
 interface UIStore {
   // Paneles laterales
@@ -19,6 +25,8 @@ interface UIStore {
   colorScheme: ColorScheme;
   mapViewState: MapViewState;
   flyToTarget: { center: [number, number]; zoom: number } | null;
+  corredorActivo: CorredorVialActivo | null;
+
   // Herramientas GIS
   mostrarRadio100m: boolean;
   toggleRadio100m: () => void;
@@ -41,6 +49,8 @@ interface UIStore {
   setMapViewState: (state: MapViewState) => void;
   flyTo: (center: [number, number], zoom: number) => void;
   clearFlyTo: () => void;
+  setCorredorActivo: (corredor: CorredorVialActivo | null) => void;
+  limpiarCorredorActivo: () => void;
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -51,9 +61,13 @@ export const useUIStore = create<UIStore>((set) => ({
   colorScheme: 'estado_contrato',
   mapViewState: { center: [-77.0428, -12.0464], zoom: 12 },
   flyToTarget: null,
+  corredorActivo: null,
   mostrarRadio100m: false,
   mostrarTodosRadios100m: false,
   leyendaAbierta: false,
+
+  setCorredorActivo: (corredor) => set({ corredorActivo: corredor }),
+  limpiarCorredorActivo: () => set({ corredorActivo: null }),
 
   toggleRadio100m: () =>
     set((state) => ({ mostrarRadio100m: !state.mostrarRadio100m })),

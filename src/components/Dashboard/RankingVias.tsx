@@ -10,7 +10,9 @@ import { calcularRankingVias, CategoriaVia, ViaRanked } from '@/lib/viasNormaliz
 export default function RankingVias() {
   const [categoria, setCategoria] = useState<CategoriaVia>('todas');
   const paneles = useFilteredPanels();
-  const flyTo = useUIStore((state) => state.flyTo);
+  const corredorActivo = useUIStore((state) => state.corredorActivo);
+  const setCorredorActivo = useUIStore((state) => state.setCorredorActivo);
+  const limpiarCorredorActivo = useUIStore((state) => state.limpiarCorredorActivo);
   const seleccionarPanel = usePanelStore((state) => state.seleccionarPanel);
 
   // Recálculo reactivo y automático en memoria (< 5 ms)
@@ -25,14 +27,24 @@ export default function RankingVias() {
   }, [ranking]);
 
   const handleViaClick = useCallback((item: ViaRanked) => {
-    // 1. Vuelo animado y suave hacia el corredor vial
-    flyTo(item.centroide, 15);
+    // Si ya está activo este corredor, deseleccionar al hacer clic de nuevo
+    if (corredorActivo?.nombre === item.nombre) {
+      limpiarCorredorActivo();
+      return;
+    }
 
-    // 2. Si tiene paneles, enfocar el primer elemento del grupo para abrir ficha
+    // 1. Activar el corredor en el mapa con su encuadre exacto (fitBounds) y paneles
+    setCorredorActivo({
+      nombre: item.nombre,
+      paneles: item.paneles,
+      bounds: item.bounds,
+    });
+
+    // 2. Si tiene paneles, seleccionar el primero para ficha técnica
     if (item.paneles.length > 0) {
       seleccionarPanel(item.paneles[0]);
     }
-  }, [flyTo, seleccionarPanel]);
+  }, [corredorActivo, setCorredorActivo, limpiarCorredorActivo, seleccionarPanel]);
 
   return (
     <div className={styles.rankingContainer}>
@@ -46,7 +58,7 @@ export default function RankingVias() {
           </div>
           <div>
             <h3 className={styles.title}>Ranking de Ejes y Vías</h3>
-            <span className={styles.subtitle}>Top 10 arterias con mayor densidad</span>
+            <span className={styles.subtitle}>Top 10 arterias con mayor concentración</span>
           </div>
         </div>
 
@@ -76,47 +88,59 @@ export default function RankingVias() {
         </div>
       </div>
 
+      {/* Aviso de corredor activo con botón de restablecer */}
+      {corredorActivo && (
+        <div className={styles.activeCorredorNotice}>
+          <span>Enfocando: <strong>{corredorActivo.nombre}</strong> ({corredorActivo.paneles.length} paneles)</span>
+          <button
+            type="button"
+            className={styles.resetCorredorBtn}
+            onClick={limpiarCorredorActivo}
+            title="Quitar enfoque de la vía"
+          >
+            Ver toda la ciudad ✕
+          </button>
+        </div>
+      )}
+
       {/* Lista de Barras Interactivas */}
       <div className={styles.listContainer}>
         {ranking.length === 0 ? (
           <div className={styles.emptyNotice}>
-            No se encontraron vías con paneles en la vista o filtro actual.
+            No se encontraron vías con paneles en el filtro actual.
           </div>
         ) : (
           ranking.map((item, index) => {
             const porcentajeRelativo = Math.round((item.cantidad / maxCantidad) * 100);
-            const isTop3 = index < 3;
+            const isSelected = corredorActivo?.nombre === item.nombre;
 
             return (
               <button
                 key={item.nombre}
                 type="button"
-                className={styles.viaItem}
+                className={`${styles.viaItem} ${isSelected ? styles.viaItemSelected : ''}`}
                 onClick={() => handleViaClick(item)}
                 title={`Hacer clic para enfocar los ${item.cantidad} paneles de ${item.nombre} en el mapa`}
               >
                 <div className={styles.viaMetaRow}>
                   <div className={styles.viaRankAndName}>
-                    <span className={`${styles.rankBadge} ${isTop3 ? styles.rankBadgeTop : ''}`}>
+                    <span className={`${styles.rankBadge} ${isSelected ? styles.rankBadgeActive : ''}`}>
                       {index + 1}
                     </span>
                     <span className={styles.viaNombre}>{item.nombre}</span>
                   </div>
 
                   <div className={styles.viaStats}>
-                    <span className={`${styles.tipoTag} ${item.categoria === 'eje' ? styles.tipoEje : styles.tipoCalle}`}>
-                      {item.categoria === 'eje' ? 'Eje' : 'Local'}
-                    </span>
                     <span className={styles.countBadge}>
-                      {item.cantidad}
+                      {item.cantidad} {item.cantidad === 1 ? 'panel' : 'paneles'}
                     </span>
                   </div>
                 </div>
 
-                {/* Barra de Progreso */}
+                {/* Barra de Progreso uniforme institucional */}
                 <div className={styles.progressTrack}>
                   <div
-                    className={`${styles.progressBar} ${isTop3 ? styles.progressBarTop : ''}`}
+                    className={`${styles.progressBar} ${isSelected ? styles.progressBarActive : ''}`}
                     style={{ width: `${porcentajeRelativo}%` }}
                   />
                 </div>
@@ -128,4 +152,3 @@ export default function RankingVias() {
     </div>
   );
 }
-

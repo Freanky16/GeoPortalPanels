@@ -17,7 +17,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
 }
 
@@ -90,6 +90,35 @@
   color: var(--accent);
 }
 
+/* Aviso de corredor activo */
+.activeCorredorNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--accent-light);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  margin-bottom: 10px;
+  font-size: 11.5px;
+  color: var(--text-primary);
+}
+
+.resetCorredorBtn {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 2px 4px;
+}
+
+.resetCorredorBtn:hover {
+  color: var(--accent-hover);
+}
+
 /* Listado de Barras */
 .listContainer {
   display: flex;
@@ -105,8 +134,8 @@
   flex-direction: column;
   gap: 4px;
   background: transparent;
-  border: none;
-  padding: 4px 6px;
+  border: 1px solid transparent;
+  padding: 6px 8px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   text-align: left;
@@ -116,7 +145,12 @@
 
 .viaItem:hover {
   background: rgba(26, 115, 232, 0.06);
-  transform: translateX(2px);
+  border-color: rgba(26, 115, 232, 0.2);
+}
+
+.viaItemSelected {
+  background: rgba(26, 115, 232, 0.12);
+  border-color: var(--accent);
 }
 
 .viaMetaRow {
@@ -130,7 +164,7 @@
 .viaRankAndName {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
   flex: 1;
 }
@@ -138,8 +172,8 @@
 .rankBadge {
   font-size: 10px;
   font-weight: 800;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -149,9 +183,9 @@
   flex-shrink: 0;
 }
 
-.rankBadgeTop {
-  background: var(--accent-light);
-  color: var(--accent);
+.rankBadgeActive {
+  background: var(--accent);
+  color: #FFFFFF;
 }
 
 .viaNombre {
@@ -165,38 +199,18 @@
 .viaStats {
   display: flex;
   align-items: center;
-  gap: 6px;
   flex-shrink: 0;
 }
 
 .countBadge {
   font-weight: 800;
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-primary);
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  padding: 1px 7px;
+  padding: 2px 8px;
   border-radius: 99px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.tipoTag {
-  font-size: 9px;
-  text-transform: uppercase;
-  font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 4px;
-  letter-spacing: 0.02em;
-}
-
-.tipoEje {
-  background: rgba(26, 115, 232, 0.12);
-  color: var(--accent);
-}
-
-.tipoCalle {
-  background: rgba(16, 185, 129, 0.12);
-  color: #10B981;
 }
 
 /* Barra de progreso / concentración */
@@ -220,8 +234,8 @@
   transition: width 400ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.progressBarTop {
-  background: linear-gradient(90deg, #1E8E3E, #34D399);
+.progressBarActive {
+  background: linear-gradient(90deg, #1557B0, #1A73E8);
 }
 
 .emptyNotice {
@@ -233,4 +247,3 @@
   font-size: 12px;
   font-weight: 600;
 }
-
