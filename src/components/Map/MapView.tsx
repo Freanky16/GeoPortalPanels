@@ -32,6 +32,11 @@ const RADIO_ALL_BUFFER_SOURCE_ID = 'radio-all-buffer-source';
 const RADIO_ALL_BUFFER_FILL_LAYER = 'radio-all-buffer-fill';
 const RADIO_ALL_BUFFER_LINE_LAYER = 'radio-all-buffer-line';
 
+// Parpadeo Multitudinario de Corredor Vial (Multi-Beacon Pulse WebGL)
+const CORREDOR_BEACONS_SOURCE_ID = 'corredor-beacons-source';
+const CORREDOR_PULSE_OUTER_LAYER = 'corredor-pulse-outer';
+const CORREDOR_PULSE_INNER_LAYER = 'corredor-pulse-inner';
+
 /**
  * Genera un polígono GeoJSON circular con radio en metros
  */
@@ -421,6 +426,82 @@ export default function MapView() {
         RADIO_BUFFER_FILL_LAYER
       );
     }
+
+    // 9. Capa y fuente: Parpadeo Multitudinario (Multi-Beacon Pulse WebGL)
+    if (!mapInstance.getSource(CORREDOR_BEACONS_SOURCE_ID)) {
+      mapInstance.addSource(CORREDOR_BEACONS_SOURCE_ID, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+    }
+
+    // Onda exterior del parpadeo (Halo amplio y difuso que escala con el zoom)
+    if (!mapInstance.getLayer(CORREDOR_PULSE_OUTER_LAYER)) {
+      mapInstance.addLayer(
+        {
+          id: CORREDOR_PULSE_OUTER_LAYER,
+          type: 'circle',
+          source: CORREDOR_BEACONS_SOURCE_ID,
+          paint: {
+            'circle-radius': [
+              'interpolate', ['linear'], ['zoom'],
+              9, 3.5,
+              11, 7.0,
+              13, 13.0,
+              15, 20.0,
+              17, 30.0,
+              19, 42.0,
+            ],
+            'circle-color': [
+              'match',
+              ['get', 'estadoContrato'],
+              'vigente', ESTADO_COLORS.vigente,
+              'por_vencer', ESTADO_COLORS.por_vencer,
+              'vencido', ESTADO_COLORS.vencido,
+              ESTADO_COLORS.sin_dato,
+            ],
+            'circle-opacity': 0.45,
+            'circle-blur': 0.75,
+          },
+        },
+        PANELES_HALO_LAYER
+      );
+    }
+
+    // Onda interior del parpadeo (Anillo concentrado de alta energía)
+    if (!mapInstance.getLayer(CORREDOR_PULSE_INNER_LAYER)) {
+      mapInstance.addLayer(
+        {
+          id: CORREDOR_PULSE_INNER_LAYER,
+          type: 'circle',
+          source: CORREDOR_BEACONS_SOURCE_ID,
+          paint: {
+            'circle-radius': [
+              'interpolate', ['linear'], ['zoom'],
+              9, 2.0,
+              11, 4.5,
+              13, 8.5,
+              15, 13.0,
+              17, 19.0,
+              19, 26.0,
+            ],
+            'circle-color': [
+              'match',
+              ['get', 'estadoContrato'],
+              'vigente', ESTADO_COLORS.vigente,
+              'por_vencer', ESTADO_COLORS.por_vencer,
+              'vencido', ESTADO_COLORS.vencido,
+              ESTADO_COLORS.sin_dato,
+            ],
+            'circle-opacity': 0.65,
+            'circle-stroke-width': 1.5,
+            'circle-stroke-color': '#FFFFFF',
+            'circle-stroke-opacity': 0.85,
+          },
+        },
+        PANELES_HALO_LAYER
+      );
+    }
   }, []);
 
   /**
@@ -699,12 +780,42 @@ export default function MapView() {
     setTimeout(() => clearFlyTo(), 1200);
   }, [flyToTarget, mapReady, clearFlyTo]);
 
-  // 5.5. Encuadre exacto (fitBounds) y realce de paneles del Corredor Vial Activo
+  // 5.5. Encuadre exacto (fitBounds), realce y Parpadeo Multitudinario del Corredor Vial Activo
   useEffect(() => {
     if (!mapReady || !map.current) return;
+    const beaconsSource = map.current.getSource(CORREDOR_BEACONS_SOURCE_ID) as maplibregl.GeoJSONSource;
+
+    let animFrameId: number | null = null;
 
     if (corredorActivo && corredorActivo.paneles.length > 0) {
-      // 1. Encuadre inteligente fitBounds hacia el tramo de la arteria
+      // 1. Cargar todos los paneles de esta vía en la fuente de balizas parpadeantes
+      if (beaconsSource) {
+        beaconsSource.setData(buildPanelsGeoJSON(corredorActivo.paneles));
+      }
+
+      // 2. Loop de animación sinusoidal suave para el parpadeo armónico colectivo
+      let startTime = performance.now();
+      const animatePulse = (currentTime: number) => {
+        if (!map.current) return;
+        const elapsed = (currentTime - startTime) / 1000;
+        // Onda periódica de respiración luminosa (ciclo de 1.4 segundos)
+        const wave = 0.5 + 0.5 * Math.sin((elapsed * 2 * Math.PI) / 1.4);
+        const outerOpacity = 0.2 + 0.55 * wave;
+        const innerOpacity = 0.35 + 0.6 * wave;
+
+        if (map.current.getLayer(CORREDOR_PULSE_OUTER_LAYER)) {
+          map.current.setPaintProperty(CORREDOR_PULSE_OUTER_LAYER, 'circle-opacity', outerOpacity);
+        }
+        if (map.current.getLayer(CORREDOR_PULSE_INNER_LAYER)) {
+          map.current.setPaintProperty(CORREDOR_PULSE_INNER_LAYER, 'circle-opacity', innerOpacity);
+        }
+
+        animFrameId = requestAnimationFrame(animatePulse);
+      };
+
+      animFrameId = requestAnimationFrame(animatePulse);
+
+      // 3. Encuadre inteligente fitBounds hacia el tramo de la arteria
       try {
         map.current.fitBounds(corredorActivo.bounds, {
           padding: 95,
@@ -715,7 +826,7 @@ export default function MapView() {
         // Fallback
       }
 
-      // 2. Resaltar los paneles del corredor y atenuar suavemente los demás
+      // 4. Resaltar los paneles del corredor y atenuar suavemente los demás
       if (map.current.getLayer(PANELES_POINT_LAYER)) {
         const codigosCorredor = corredorActivo.paneles.map((p) => p.codigo);
         map.current.setPaintProperty(PANELES_POINT_LAYER, 'circle-opacity', [
@@ -730,7 +841,6 @@ export default function MapView() {
           0.95,
           0.1,
         ]);
-        // Incrementar ligeramente el radio de los puntos enfocados para darles protagonismo
         map.current.setPaintProperty(PANELES_POINT_LAYER, 'circle-radius', [
           'case',
           ['in', ['get', 'codigo'], ['literal', codigosCorredor]],
@@ -755,7 +865,10 @@ export default function MapView() {
         ]);
       }
     } else {
-      // Sin corredor activo: restaurar opacidades y radios normales de toda la ciudad
+      // Sin corredor activo: vaciar balizas y restaurar opacidades normales
+      if (beaconsSource) {
+        beaconsSource.setData({ type: 'FeatureCollection', features: [] });
+      }
       if (map.current.getLayer(PANELES_POINT_LAYER)) {
         map.current.setPaintProperty(PANELES_POINT_LAYER, 'circle-opacity', [
           'interpolate', ['linear'], ['zoom'],
@@ -782,6 +895,12 @@ export default function MapView() {
         ]);
       }
     }
+
+    return () => {
+      if (animFrameId !== null) {
+        cancelAnimationFrame(animFrameId);
+      }
+    };
   }, [corredorActivo, mapReady]);
 
   // 6. Radio Normativo de 100 metros (Ordenanza MML - separación mínima entre elementos)

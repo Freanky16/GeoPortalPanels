@@ -34,17 +34,13 @@ export default function RankingVias() {
     }
 
     // 1. Activar el corredor en el mapa con su encuadre exacto (fitBounds) y paneles
+    // Todos los paneles de esta vía parpadearán simultáneamente en el mapa sin seleccionar ninguno al azar
     setCorredorActivo({
       nombre: item.nombre,
       paneles: item.paneles,
       bounds: item.bounds,
     });
-
-    // 2. Si tiene paneles, seleccionar el primero para ficha técnica
-    if (item.paneles.length > 0) {
-      seleccionarPanel(item.paneles[0]);
-    }
-  }, [corredorActivo, setCorredorActivo, limpiarCorredorActivo, seleccionarPanel]);
+  }, [corredorActivo, setCorredorActivo, limpiarCorredorActivo]);
 
   return (
     <div className={styles.rankingContainer}>
