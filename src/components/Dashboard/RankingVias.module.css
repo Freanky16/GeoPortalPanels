@@ -1,0 +1,236 @@
+.rankingContainer {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  padding: 16px 18px;
+  height: 100%;
+  min-height: 290px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.titleArea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titleIcon {
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+}
+
+.title {
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Selector Tabs */
+.tabsGroup {
+  display: inline-flex;
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  gap: 2px;
+}
+
+[data-theme='dark'] .tabsGroup {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tabBtn {
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.tabBtn:hover {
+  color: var(--text-primary);
+}
+
+.tabBtnActive {
+  background: var(--bg-secondary);
+  color: var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme='dark'] .tabBtnActive {
+  background: var(--bg-tertiary);
+  color: var(--accent);
+}
+
+/* Listado de Barras */
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 4px;
+  flex: 1;
+}
+
+.viaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.viaItem:hover {
+  background: rgba(26, 115, 232, 0.06);
+  transform: translateX(2px);
+}
+
+.viaMetaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 12px;
+}
+
+.viaRankAndName {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex: 1;
+}
+
+.rankBadge {
+  font-size: 10px;
+  font-weight: 800;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-muted);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.rankBadgeTop {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.viaNombre {
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.viaStats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.countBadge {
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 1px 7px;
+  border-radius: 99px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.tipoTag {
+  font-size: 9px;
+  text-transform: uppercase;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+}
+
+.tipoEje {
+  background: rgba(26, 115, 232, 0.12);
+  color: var(--accent);
+}
+
+.tipoCalle {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+}
+
+/* Barra de progreso / concentración */
+.progressTrack {
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 99px;
+  overflow: hidden;
+  position: relative;
+}
+
+[data-theme='dark'] .progressTrack {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #1A73E8, #60A5FA);
+  transition: width 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progressBarTop {
+  background: linear-gradient(90deg, #1E8E3E, #34D399);
+}
+
+.emptyNotice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+

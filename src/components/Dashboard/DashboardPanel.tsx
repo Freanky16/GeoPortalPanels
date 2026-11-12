@@ -2,11 +2,7 @@
 
 import React from 'react';
 import styles from './DashboardPanel.module.css';
-import ChartContratos from './ChartContratos';
-import ChartDistrito from './ChartDistrito';
-import ChartTipoEPE from './ChartTipoEPE';
-import ChartEmpresas from './ChartEmpresas';
-import ChartTimeline from './ChartTimeline';
+import RankingVias from './RankingVias';
 import StatsCards from './StatsCards';
 import { useUIStore } from '@/store/useUIStore';
 
@@ -16,25 +12,35 @@ export default function DashboardPanel() {
 
   return (
     <div className={`${styles.dashboardContainer} ${!isOpen ? styles.dashboardClosed : ''}`}>
-      <button className={styles.toggleBtn} onClick={toggleDashboard} aria-label="Alternar panel de gráficos">
+      {/* Botón Flotante para abrir/cerrar */}
+      <button className={styles.toggleBtn} onClick={toggleDashboard} aria-label="Alternar panel de analítica vial">
         <svg
           className={`${styles.toggleIcon} ${isOpen ? styles.toggleIconOpen : ''}`}
-          width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
         >
-          <polyline points="18 15 12 9 6 15"></polyline>
+          <polyline points="18 15 12 9 6 15" />
         </svg>
-        {isOpen ? 'Ocultar Analítica' : 'Ver Analítica'}
+        {isOpen ? 'Ocultar Analítica Territorial' : 'Ver Analítica Territorial'}
       </button>
 
       <div className={styles.content}>
-        <div style={{ width: '100%', marginBottom: '16px' }}>
+        {/* Fila Superior: Cifras de impacto */}
+        <div className={styles.statsWrapper}>
           <StatsCards />
         </div>
-        <ChartContratos />
-        <ChartDistrito />
-        <ChartTipoEPE />
-        <ChartEmpresas />
-        <ChartTimeline />
+
+        {/* Fila Principal: Métricas Territoriales Estratégicas */}
+        <div className={styles.metricsGrid}>
+          {/* Métrica A: Ranking de Ejes y Vías (Interactivo) */}
+          <div className={styles.metricColumnPrimary}>
+            <RankingVias />
+          </div>
+        </div>
       </div>
     </div>
   );

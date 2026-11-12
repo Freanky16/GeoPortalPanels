@@ -84,8 +84,8 @@ export default function Home() {
       {/* 6. Ficha Técnica del Panel Seleccionado */}
       <PanelCard />
 
-      {/* 7. Panel Analítico y Estadístico — NOTA: Esto está oculto por ahora para entrega preliminar */}
-      {/* <DashboardPanel /> */}
+      {/* 7. Panel Analítico Territorial (Métricas Estratégicas MML) */}
+      <DashboardPanel />
     </main>
   );
 }
