@@ -4,6 +4,7 @@ import React from 'react';
 import styles from './DashboardPanel.module.css';
 import RankingVias from './RankingVias';
 import DensidadDistritos from './DensidadDistritos';
+import ConcentracionEmpresas from './ConcentracionEmpresas';
 import StatsCards from './StatsCards';
 import { useUIStore } from '@/store/useUIStore';
 
@@ -14,7 +15,7 @@ export default function DashboardPanel() {
   return (
     <div className={`${styles.dashboardContainer} ${!isOpen ? styles.dashboardClosed : ''}`}>
       {/* Botón Flotante para abrir/cerrar */}
-      <button className={styles.toggleBtn} onClick={toggleDashboard} aria-label="Alternar panel de analítica vial">
+      <button className={styles.toggleBtn} onClick={toggleDashboard} aria-label="Alternar panel de análisis de datos">
         <svg
           className={`${styles.toggleIcon} ${isOpen ? styles.toggleIconOpen : ''}`}
           width="18"
@@ -26,7 +27,7 @@ export default function DashboardPanel() {
         >
           <polyline points="18 15 12 9 6 15" />
         </svg>
-        {isOpen ? 'Ocultar Analítica Territorial' : 'Ver Analítica Territorial'}
+        {isOpen ? 'Ocultar Métricas de la Ciudad' : 'Ver Análisis y Métricas de Lima'}
       </button>
 
       <div className={styles.content}>
@@ -35,16 +36,21 @@ export default function DashboardPanel() {
           <StatsCards />
         </div>
 
-        {/* Fila Principal: Métricas Territoriales Estratégicas */}
+        {/* Fila Principal: Panel de Métricas Territoriales (Tríada Estratégica MML) */}
         <div className={styles.metricsGrid}>
-          {/* Métrica A: Ranking de Ejes y Vías (Interactivo) */}
+          {/* Métrica 1: Ranking de Ejes y Vías (Interactivo) */}
           <div className={styles.metricColumn}>
             <RankingVias />
           </div>
 
-          {/* Métrica B: Densidad por Distrito (Top 10) */}
+          {/* Métrica 2: Densidad por Distrito (Top 10) */}
           <div className={styles.metricColumn}>
             <DensidadDistritos />
+          </div>
+
+          {/* Métrica 3: Concentración por Empresa Concesionaria (Top 10) */}
+          <div className={styles.metricColumn}>
+            <ConcentracionEmpresas />
           </div>
         </div>
       </div>

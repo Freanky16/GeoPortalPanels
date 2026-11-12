@@ -32,11 +32,9 @@ const RADIO_ALL_BUFFER_SOURCE_ID = 'radio-all-buffer-source';
 const RADIO_ALL_BUFFER_FILL_LAYER = 'radio-all-buffer-fill';
 const RADIO_ALL_BUFFER_LINE_LAYER = 'radio-all-buffer-line';
 
-// Parpadeo Multitudinario de Corredor Vial (Multi-Beacon Pulse WebGL)
+// Parpadeo Multitudinario de Corredor Vial (Onda Suave Expansiva)
 const CORREDOR_BEACONS_SOURCE_ID = 'corredor-beacons-source';
-const CORREDOR_PULSE_OUTER_LAYER = 'corredor-pulse-outer';
-const CORREDOR_PULSE_MID_LAYER = 'corredor-pulse-mid';
-const CORREDOR_PULSE_INNER_LAYER = 'corredor-pulse-inner';
+const CORREDOR_PULSE_WAVE_LAYER = 'corredor-pulse-wave';
 
 /**
  * Genera un polígono GeoJSON circular con radio en metros
@@ -428,7 +426,7 @@ export default function MapView() {
       );
     }
 
-    // 9. Capa y fuente: Parpadeo Multitudinario (Multi-Beacon Pulse WebGL - Triple Onda)
+    // 9. Capa y fuente: Parpadeo Multitudinario (Onda suave expansiva de luz)
     if (!mapInstance.getSource(CORREDOR_BEACONS_SOURCE_ID)) {
       mapInstance.addSource(CORREDOR_BEACONS_SOURCE_ID, {
         type: 'geojson',
@@ -436,22 +434,22 @@ export default function MapView() {
       });
     }
 
-    // Onda 3: Exterior expansiva difusa
-    if (!mapInstance.getLayer(CORREDOR_PULSE_OUTER_LAYER)) {
+    // Onda expansiva limpia tipo radar (sin bordes blancos rígidos ni fichas)
+    if (!mapInstance.getLayer(CORREDOR_PULSE_WAVE_LAYER)) {
       mapInstance.addLayer(
         {
-          id: CORREDOR_PULSE_OUTER_LAYER,
+          id: CORREDOR_PULSE_WAVE_LAYER,
           type: 'circle',
           source: CORREDOR_BEACONS_SOURCE_ID,
           paint: {
             'circle-radius': [
               'interpolate', ['linear'], ['zoom'],
-              9, 8.0,
-              11, 13.0,
-              13, 20.0,
-              15, 29.0,
-              17, 40.0,
-              19, 54.0,
+              9, 6.0,
+              11, 10.0,
+              13, 16.0,
+              15, 24.0,
+              17, 34.0,
+              19, 46.0,
             ],
             'circle-color': [
               'match',
@@ -461,78 +459,18 @@ export default function MapView() {
               'vencido', ESTADO_COLORS.vencido,
               ESTADO_COLORS.sin_dato,
             ],
-            'circle-opacity': 0.35,
-            'circle-blur': 0.85,
-          },
-        },
-        PANELES_HALO_LAYER
-      );
-    }
-
-    // Onda 2: Media semitranslúcida
-    if (!mapInstance.getLayer(CORREDOR_PULSE_MID_LAYER)) {
-      mapInstance.addLayer(
-        {
-          id: CORREDOR_PULSE_MID_LAYER,
-          type: 'circle',
-          source: CORREDOR_BEACONS_SOURCE_ID,
-          paint: {
-            'circle-radius': [
-              'interpolate', ['linear'], ['zoom'],
-              9, 5.5,
-              11, 9.0,
-              13, 14.0,
-              15, 21.0,
-              17, 29.0,
-              19, 39.0,
-            ],
-            'circle-color': [
-              'match',
-              ['get', 'estadoContrato'],
-              'vigente', ESTADO_COLORS.vigente,
-              'por_vencer', ESTADO_COLORS.por_vencer,
-              'vencido', ESTADO_COLORS.vencido,
-              ESTADO_COLORS.sin_dato,
-            ],
-            'circle-opacity': 0.55,
-            'circle-stroke-width': 1.0,
-            'circle-stroke-color': '#FFFFFF',
-            'circle-stroke-opacity': 0.6,
-          },
-        },
-        PANELES_HALO_LAYER
-      );
-    }
-
-    // Onda 1: Núcleo brillante concentrado
-    if (!mapInstance.getLayer(CORREDOR_PULSE_INNER_LAYER)) {
-      mapInstance.addLayer(
-        {
-          id: CORREDOR_PULSE_INNER_LAYER,
-          type: 'circle',
-          source: CORREDOR_BEACONS_SOURCE_ID,
-          paint: {
-            'circle-radius': [
-              'interpolate', ['linear'], ['zoom'],
-              9, 3.5,
-              11, 6.0,
-              13, 9.5,
-              15, 14.0,
-              17, 19.0,
-              19, 25.0,
-            ],
-            'circle-color': [
-              'match',
-              ['get', 'estadoContrato'],
-              'vigente', ESTADO_COLORS.vigente,
-              'por_vencer', ESTADO_COLORS.por_vencer,
-              'vencido', ESTADO_COLORS.vencido,
-              ESTADO_COLORS.sin_dato,
-            ],
-            'circle-opacity': 0.85,
+            'circle-opacity': 0.5,
+            'circle-blur': 0.65,
             'circle-stroke-width': 1.5,
-            'circle-stroke-color': '#FFFFFF',
-            'circle-stroke-opacity': 0.95,
+            'circle-stroke-color': [
+              'match',
+              ['get', 'estadoContrato'],
+              'vigente', ESTADO_COLORS.vigente,
+              'por_vencer', ESTADO_COLORS.por_vencer,
+              'vencido', ESTADO_COLORS.vencido,
+              ESTADO_COLORS.sin_dato,
+            ],
+            'circle-stroke-opacity': 0.75,
           },
         },
         PANELES_HALO_LAYER
@@ -834,20 +772,15 @@ export default function MapView() {
       const animatePulse = (currentTime: number) => {
         if (!map.current) return;
         const elapsed = (currentTime - startTime) / 1000;
-        // Onda periódica de respiración luminosa (ciclo dinámico de 1.1s)
-        const wave = 0.5 + 0.5 * Math.sin((elapsed * 2 * Math.PI) / 1.1);
-        const outerOpacity = 0.25 + 0.65 * wave;
-        const midOpacity = 0.35 + 0.6 * wave;
-        const innerOpacity = 0.55 + 0.45 * wave;
+        // Ciclo de onda expansiva suave tipo radar (1.3 segundos)
+        const progress = (elapsed % 1.3) / 1.3; // de 0 a 1 lineal
+        // La opacidad va de 0.8 a 0 al expandirse
+        const opacity = Math.max(0, 0.8 * (1 - progress));
+        const strokeOpacity = Math.max(0, 0.9 * (1 - progress));
 
-        if (map.current.getLayer(CORREDOR_PULSE_OUTER_LAYER)) {
-          map.current.setPaintProperty(CORREDOR_PULSE_OUTER_LAYER, 'circle-opacity', outerOpacity);
-        }
-        if (map.current.getLayer(CORREDOR_PULSE_MID_LAYER)) {
-          map.current.setPaintProperty(CORREDOR_PULSE_MID_LAYER, 'circle-opacity', midOpacity);
-        }
-        if (map.current.getLayer(CORREDOR_PULSE_INNER_LAYER)) {
-          map.current.setPaintProperty(CORREDOR_PULSE_INNER_LAYER, 'circle-opacity', innerOpacity);
+        if (map.current.getLayer(CORREDOR_PULSE_WAVE_LAYER)) {
+          map.current.setPaintProperty(CORREDOR_PULSE_WAVE_LAYER, 'circle-opacity', opacity);
+          map.current.setPaintProperty(CORREDOR_PULSE_WAVE_LAYER, 'circle-stroke-opacity', strokeOpacity);
         }
 
         animFrameId = requestAnimationFrame(animatePulse);

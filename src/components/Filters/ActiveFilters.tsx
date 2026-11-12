@@ -3,6 +3,7 @@
 import React from 'react';
 import styles from './ActiveFilters.module.css';
 import { useFilterStore } from '@/store/useFilterStore';
+import { useUIStore } from '@/store/useUIStore';
 import { FiltrosActivos } from '@/types';
 
 type FilterKey = keyof Omit<FiltrosActivos, 'busqueda'>;
@@ -12,9 +13,15 @@ export default function ActiveFilters() {
   const toggleFilter = useFilterStore((state) => state.toggleFilter);
   const clearAll = useFilterStore((state) => state.clearAll);
   const setBusqueda = useFilterStore((state) => state.setBusqueda);
+  const limpiarCorredorActivo = useUIStore((state) => state.limpiarCorredorActivo);
   const hayFiltros = useFilterStore((state) => state.hayFiltrosActivos());
 
   if (!hayFiltros) return null;
+
+  const handleClearAll = () => {
+    clearAll();
+    limpiarCorredorActivo();
+  };
 
   // Recopilar todos los filtros activos en un solo array plano para renderizarlos
   const activeTags: { key: FilterKey | 'busqueda'; valor: string; label: string }[] = [];
@@ -52,7 +59,7 @@ export default function ActiveFilters() {
     <div className={styles.container}>
       <div className={styles.header}>
         <span className={styles.title}>Filtros activos</span>
-        <button className={styles.clearAllBtn} onClick={clearAll}>
+        <button className={styles.clearAllBtn} onClick={handleClearAll}>
           Limpiar todo
         </button>
       </div>

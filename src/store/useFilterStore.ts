@@ -60,12 +60,24 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
     })),
 
   clearFilter: (key) =>
-    set((state) => ({
-      filtros: { ...state.filtros, [key]: [] },
-    })),
+    set((state) => {
+      // Si se limpia el filtro que estaba enfocando el corredor/distrito, limpiamos el resalte
+      if (typeof window !== 'undefined') {
+        const { useUIStore } = require('@/store/useUIStore');
+        useUIStore.getState().limpiarCorredorActivo();
+      }
+      return {
+        filtros: { ...state.filtros, [key]: [] },
+      };
+    }),
 
-  clearAll: () =>
-    set({ filtros: { ...FILTROS_VACIOS } }),
+  clearAll: () => {
+    if (typeof window !== 'undefined') {
+      const { useUIStore } = require('@/store/useUIStore');
+      useUIStore.getState().limpiarCorredorActivo();
+    }
+    set({ filtros: { ...FILTROS_VACIOS } });
+  },
 
   hayFiltrosActivos: () => {
     const { filtros } = get();

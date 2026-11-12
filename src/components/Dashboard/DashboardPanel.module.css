@@ -112,13 +112,13 @@
 
 .metricsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
   gap: 16px;
   flex: 1;
   min-height: 0;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 960px) {
   .metricsGrid {
     grid-template-columns: 1fr;
   }
