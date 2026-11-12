@@ -104,6 +104,27 @@ function createGeoJSONCircles(centers: [number, number][], radiusInMeters: numbe
 }
 
 /**
+ * Normaliza y expande los nombres de distritos para soportar variantes
+ * con tildes (ej: "Jesús María" de la BD) y sin tildes ("JESUS MARIA" de distritos.geojson),
+ * así como nombres compuestos ("Lurigancho-Chosica" -> "LURIGANCHO").
+ */
+function expandirVariantesDistrito(distritos: string[]): string[] {
+  const result = new Set<string>();
+  for (const d of distritos) {
+    if (!d) continue;
+    const upper = d.toUpperCase().trim();
+    const sinTildes = upper.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    result.add(upper);
+    result.add(sinTildes);
+
+    if (sinTildes.includes('LURIGANCHO')) result.add('LURIGANCHO');
+    if (sinTildes.includes('MAGDALENA')) result.add('MAGDALENA DEL MAR');
+    if (sinTildes.includes('ATE')) result.add('ATE');
+  }
+  return Array.from(result);
+}
+
+/**
  * Convierte un arreglo de paneles a FeatureCollection GeoJSON listo para MapLibre
  */
 function buildPanelsGeoJSON(paneles: Panel[]): GeoJSON.FeatureCollection {
@@ -599,7 +620,8 @@ export default function MapView() {
     if (!map.current.getLayer(DISTRITOS_HIGHLIGHT_LAYER) || !map.current.getLayer(DISTRITOS_FILL_LAYER)) return;
 
     if (distritosFiltro && distritosFiltro.length > 0) {
-      const filterExpr: any = ['in', 'distrito', ...distritosFiltro.map(d => d.toUpperCase())];
+      const variantes = expandirVariantesDistrito(distritosFiltro);
+      const filterExpr: any = ['in', 'distrito', ...variantes];
       map.current.setFilter(DISTRITOS_HIGHLIGHT_LAYER, filterExpr);
       map.current.setFilter(DISTRITOS_FILL_LAYER, filterExpr);
     } else {
@@ -629,7 +651,8 @@ export default function MapView() {
       // Reaplicar resalte de distritos
       if (map.current.getLayer(DISTRITOS_HIGHLIGHT_LAYER) && map.current.getLayer(DISTRITOS_FILL_LAYER)) {
         if (distritosFiltroRef.current && distritosFiltroRef.current.length > 0) {
-          const filterExpr: any = ['in', 'distrito', ...distritosFiltroRef.current.map(d => d.toUpperCase())];
+          const variantes = expandirVariantesDistrito(distritosFiltroRef.current);
+          const filterExpr: any = ['in', 'distrito', ...variantes];
           map.current.setFilter(DISTRITOS_HIGHLIGHT_LAYER, filterExpr);
           map.current.setFilter(DISTRITOS_FILL_LAYER, filterExpr);
         } else {
