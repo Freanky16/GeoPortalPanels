@@ -17,7 +17,6 @@ export default function InstitutionalHeader() {
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [coordNotFound, setCoordNotFound] = useState(false);
-  const [modalTecnicoOpen, setModalTecnicoOpen] = useState(false);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
 
   // Stores
@@ -37,6 +36,10 @@ export default function InstitutionalHeader() {
   const toggleTodosRadios100m = useUIStore((state) => state.toggleTodosRadios100m);
   const abrirDrawerNuevoPanel = useUIStore((state) => state.abrirDrawerNuevoPanel);
   const setUbicacionLibre = useUIStore((state) => state.setUbicacionLibre);
+  const modoMarcarPuntoLibre = useUIStore((state) => state.modoMarcarPuntoLibre);
+  const toggleModoMarcarPuntoLibre = useUIStore((state) => state.toggleModoMarcarPuntoLibre);
+  const modalTecnicoAbierto = useUIStore((state) => state.modalTecnicoAbierto);
+  const setModalTecnicoAbierto = useUIStore((state) => state.setModalTecnicoAbierto);
 
   const panelesFiltrados = useFilteredPanels();
   const activeFiltersCount = useFilterStore((state) => state.cantidadFiltrosActivos());
@@ -498,6 +501,22 @@ export default function InstitutionalHeader() {
           <span className={styles.btnLabel}>Métricas</span>
         </button>
 
+        {/* Atajo Rápido: Marcar Coordenada en Mapa (MD-5 Inspector Libre) */}
+        <button
+          className={`${styles.headerBtn} ${modoMarcarPuntoLibre ? styles.headerBtnActive : ''}`}
+          onClick={toggleModoMarcarPuntoLibre}
+          title="Marcar punto en el mapa (Inspección libre de coordenadas)"
+          style={modoMarcarPuntoLibre ? { borderColor: '#0D9488', color: '#0D9488', background: '#F0FDFA' } : undefined}
+        >
+          {/* Ícono sobrio de Persona Inspectora con Pin Geodésico */}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+            <circle cx="12" cy="8" r="2.5" />
+            <path d="M8.5 14a3.5 3.5 0 0 1 7 0" />
+          </svg>
+          <span className={styles.btnLabel}>Marcar Punto</span>
+        </button>
+
         {/* Botón Acceso Técnico (Doble Llave Institucional) */}
         {esGestor ? (
           <>
@@ -535,7 +554,7 @@ export default function InstitutionalHeader() {
         ) : (
           <button
             className={styles.headerBtn}
-            onClick={() => setModalTecnicoOpen(true)}
+            onClick={() => setModalTecnicoAbierto(true)}
             title="Acceso Técnico Municipal (Doble Llave)"
             aria-label="Acceso Técnico"
           >
@@ -638,8 +657,8 @@ export default function InstitutionalHeader() {
 
       {/* Modal de Acceso Técnico (Doble Llave) */}
       <AccesoTecnicoModal
-        isOpen={modalTecnicoOpen}
-        onClose={() => setModalTecnicoOpen(false)}
+        isOpen={modalTecnicoAbierto}
+        onClose={() => setModalTecnicoAbierto(false)}
       />
     </header>
   );

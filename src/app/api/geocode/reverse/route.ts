@@ -56,3 +56,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ direccion: null, distrito: null });
   }
 }
+

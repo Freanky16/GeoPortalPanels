@@ -182,6 +182,11 @@ export default function MapView() {
   const ubicacionLibre = useUIStore((state) => state.ubicacionLibre);
   const setUbicacionLibre = useUIStore((state) => state.setUbicacionLibre);
   const abrirDrawerNuevoPanel = useUIStore((state) => state.abrirDrawerNuevoPanel);
+  const modoMarcarPuntoLibre = useUIStore((state) => state.modoMarcarPuntoLibre);
+  const setModoMarcarPuntoLibre = useUIStore((state) => state.setModoMarcarPuntoLibre);
+  const toggleModoMarcarPuntoLibre = useUIStore((state) => state.toggleModoMarcarPuntoLibre);
+  const setModalTecnicoAbierto = useUIStore((state) => state.setModalTecnicoAbierto);
+  const esGestor = usePanelStore((state) => state.esGestor);
 
   // Hook que retorna los paneles filtrados en tiempo real
   const panelesFiltrados = useFilteredPanels();
@@ -205,6 +210,9 @@ export default function MapView() {
 
   const modoCapturaRef = useRef(modoCapturaCoordenadas);
   modoCapturaRef.current = modoCapturaCoordenadas;
+
+  const modoMarcarLibreRef = useRef(modoMarcarPuntoLibre);
+  modoMarcarLibreRef.current = modoMarcarPuntoLibre;
 
   // Ref para el faro / luz pulsante (Beacon Pulse) del panel seleccionado
   const beaconMarkerRef = useRef<maplibregl.Marker | null>(null);
@@ -584,15 +592,45 @@ export default function MapView() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mapInstance.on('click', (e: any) => {
+      // 1. Si está en modo captura de coordenadas desde el formulario Drawer
       if (modoCapturaRef.current) {
         setCoordenadasCapturadas({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+        return;
+      }
+
+      // 2. Si está en modo atajo de marcar punto libre (MD-5)
+      if (modoMarcarLibreRef.current) {
+        const { lat, lng } = e.lngLat;
+        const fueraDeLima = lat < -13.5 || lat > -11.0 || lng < -77.8 || lng > -76.0;
+
+        // Establecer ubicación inmediata sin modales
+        setUbicacionLibre({ lat, lng, fueraDeLima });
+        setModoMarcarPuntoLibre(false);
+
+        // Geocodificación inversa asíncrona para obtener dirección y distrito
+        fetch(`/api/geocode/reverse?lat=${lat}&lon=${lng}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data?.direccion || data?.distrito) {
+              setUbicacionLibre({
+                lat,
+                lng,
+                fueraDeLima,
+                direccion: data.direccion
+                  ? `${data.direccion}${data.distrito ? `, ${data.distrito}` : ''}`
+                  : data.distrito,
+              });
+            }
+          })
+          .catch(() => {});
+
         return;
       }
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mapInstance.on('click', PANELES_POINT_LAYER, (e: any) => {
-      if (modoCapturaRef.current) return;
+      if (modoCapturaRef.current || modoMarcarLibreRef.current) return;
       if (!e.features || e.features.length === 0) return;
       const properties = e.features[0].properties;
       if (!properties?.panelData) return;
@@ -662,11 +700,11 @@ export default function MapView() {
     });
   }, [seleccionarPanel]);
 
-  // Cursor cruzado cuando el modo captura está activado
+  // Cursor cruzado cuando el modo captura o modo marcar libre está activado
   useEffect(() => {
     if (!map.current) return;
-    map.current.getCanvas().style.cursor = modoCapturaCoordenadas ? 'crosshair' : '';
-  }, [modoCapturaCoordenadas]);
+    map.current.getCanvas().style.cursor = (modoCapturaCoordenadas || modoMarcarPuntoLibre) ? 'crosshair' : '';
+  }, [modoCapturaCoordenadas, modoMarcarPuntoLibre]);
 
   // 1. Inicializar el mapa
   useEffect(() => {
@@ -1131,13 +1169,19 @@ export default function MapView() {
 
     if (!ubicacionLibre) return;
 
-    // Crear pin estilizado en el DOM con estilo Teal institucional
+    // Crear pin estilizado en el DOM con estilo Teal institucional y etiqueta de coordenadas sutil encima
     const el = document.createElement('div');
     el.className = 'ubicacion-libre-marker';
     el.innerHTML = `
-      <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; transform: translate(-50%, -100%); cursor: pointer;">
-        <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(13, 148, 136, 0.28); animation: beaconRipple 1.4s ease-out infinite;"></div>
-        <div style="position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #0D9488; border: 2.5px solid #FFFFFF; box-shadow: 0 2px 10px rgba(0,0,0,0.35);"></div>
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -100%); cursor: pointer;">
+        <div style="background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: #FFFFFF; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.3); white-space: nowrap; margin-bottom: 6px; pointer-events: none; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 4px;">
+          <span style="color: #2DD4BF; font-size: 10px;">📍</span>
+          <span>${ubicacionLibre.lat.toFixed(5)}, ${ubicacionLibre.lng.toFixed(5)}</span>
+        </div>
+        <div style="position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+          <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(13, 148, 136, 0.28); animation: beaconRipple 1.4s ease-out infinite;"></div>
+          <div style="position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #0D9488; border: 2.5px solid #FFFFFF; box-shadow: 0 2px 10px rgba(0,0,0,0.4);"></div>
+        </div>
       </div>
     `;
 
@@ -1162,6 +1206,34 @@ export default function MapView() {
     <div className={styles.mapWrapper}>
       <div ref={mapContainer} className={styles.mapContainer} />
 
+      {/* Atajo Flotante en Mapa: Marcar Punto Libre (MD-5) */}
+      <button
+        className={`${styles.mapShortcutBtn} ${modoMarcarPuntoLibre ? styles.mapShortcutBtnActive : ''}`}
+        onClick={toggleModoMarcarPuntoLibre}
+        title={modoMarcarPuntoLibre ? 'Cancelar marcación' : 'Marcar punto en el mapa'}
+        aria-label="Marcar punto en el mapa"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+          <circle cx="12" cy="8" r="2.5" />
+          <path d="M8.5 14a3.5 3.5 0 0 1 7 0" />
+        </svg>
+      </button>
+
+      {/* Pill indicador superior cuando el modo marcar punto está activo */}
+      {modoMarcarPuntoLibre && (
+        <div className={styles.marcadorActivoPill}>
+          <span className={styles.marcadorPillDot} />
+          <span>Haz clic en el mapa para capturar la coordenada</span>
+          <button
+            className={styles.marcadorPillCancelBtn}
+            onClick={() => setModoMarcarPuntoLibre(false)}
+          >
+            ✕ Cancelar
+          </button>
+        </div>
+      )}
+
       {/* Tarjeta flotante no invasiva para Búsqueda Libre de Coordenadas (MD-5) */}
       {ubicacionLibre && (
         <div className={styles.ubicacionLibreCard}>
@@ -1177,6 +1249,11 @@ export default function MapView() {
                 {ubicacionLibre.lat.toFixed(5)}, {ubicacionLibre.lng.toFixed(5)}
               </div>
               <div className={styles.ubicacionLibreSub}>
+                {ubicacionLibre.direccion ? (
+                  <div style={{ color: '#0F172A', fontWeight: 600, marginBottom: 2 }}>
+                    {ubicacionLibre.direccion}
+                  </div>
+                ) : null}
                 {ubicacionLibre.fueraDeLima ? (
                   <span style={{ color: '#D97706', fontWeight: 600 }}>
                     Ubicación fuera del ámbito de Lima Metropolitana
@@ -1200,16 +1277,21 @@ export default function MapView() {
             <button
               className={styles.ubicacionLibreActionBtn}
               onClick={() => {
-                abrirDrawerNuevoPanel();
-                setCoordenadasCapturadas({ lat: ubicacionLibre.lat, lng: ubicacionLibre.lng });
-                setUbicacionLibre(null);
+                if (esGestor) {
+                  abrirDrawerNuevoPanel();
+                  setCoordenadasCapturadas({ lat: ubicacionLibre.lat, lng: ubicacionLibre.lng });
+                  setUbicacionLibre(null);
+                } else {
+                  // Si está en modo libre normal, abrir modal para autenticación técnica
+                  setModalTecnicoAbierto(true);
+                }
               }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Registrar panel aquí
+              {esGestor ? 'Registrar panel aquí' : 'Ingresar como Técnico para Registrar'}
             </button>
           </div>
         </div>

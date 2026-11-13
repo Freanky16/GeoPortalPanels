@@ -59,6 +59,15 @@ interface UIStore {
   ubicacionLibre: UbicacionLibre | null;
   setUbicacionLibre: (ubicacion: UbicacionLibre | null) => void;
 
+  // Atajo para marcar punto libre en mapa (modo inspector)
+  modoMarcarPuntoLibre: boolean;
+  setModoMarcarPuntoLibre: (val: boolean) => void;
+  toggleModoMarcarPuntoLibre: () => void;
+
+  // Modal de autenticación técnica
+  modalTecnicoAbierto: boolean;
+  setModalTecnicoAbierto: (abierto: boolean) => void;
+
   // Drawer de Edición / Creación de Paneles (Fase 2)
   drawerPanelAbierto: boolean;
   panelEnEdicion: Panel | null; // null = Nuevo panel; Panel = Editar panel existente
@@ -97,6 +106,8 @@ export const useUIStore = create<UIStore>((set) => ({
   coordenadasCapturadas: null,
   puntoSimulacion: null,
   ubicacionLibre: null,
+  modoMarcarPuntoLibre: false,
+  modalTecnicoAbierto: false,
   drawerPanelAbierto: false,
   panelEnEdicion: null,
 
@@ -104,6 +115,9 @@ export const useUIStore = create<UIStore>((set) => ({
   setCoordenadasCapturadas: (coords) => set({ coordenadasCapturadas: coords }),
   setPuntoSimulacion: (punto) => set({ puntoSimulacion: punto }),
   setUbicacionLibre: (ubicacion) => set({ ubicacionLibre: ubicacion }),
+  setModoMarcarPuntoLibre: (val) => set({ modoMarcarPuntoLibre: val }),
+  toggleModoMarcarPuntoLibre: () => set((state) => ({ modoMarcarPuntoLibre: !state.modoMarcarPuntoLibre })),
+  setModalTecnicoAbierto: (abierto) => set({ modalTecnicoAbierto: abierto }),
 
   abrirDrawerNuevoPanel: () => set({ drawerPanelAbierto: true, panelEnEdicion: null }),
   abrirDrawerEditarPanel: (panel) => set({ drawerPanelAbierto: true, panelEnEdicion: panel }),
