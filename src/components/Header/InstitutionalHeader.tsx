@@ -439,8 +439,8 @@ export default function InstitutionalHeader() {
               className={styles.headerBtn}
               onClick={abrirDrawerNuevoPanel}
               style={{
-                background: '#1E8E3E',
-                borderColor: '#1E8E3E',
+                background: '#0D9488',
+                borderColor: '#0D9488',
                 color: '#FFFFFF',
                 fontWeight: 700,
               }}

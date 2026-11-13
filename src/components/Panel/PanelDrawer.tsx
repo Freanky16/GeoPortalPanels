@@ -5,6 +5,20 @@ import styles from './PanelDrawer.module.css';
 import { useUIStore } from '@/store/useUIStore';
 import { usePanelStore } from '@/store/usePanelStore';
 import { Panel } from '@/types';
+import { DISTANCIAS_MINIMAS_EPE } from '@/lib/constants';
+
+// Cálculo geodésico exacto (Fórmula de Haversine en metros)
+function calcularDistanciaMetros(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000; // Radio de la Tierra en metros
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 export default function PanelDrawer() {
   const isOpen = useUIStore((state) => state.drawerPanelAbierto);
@@ -16,8 +30,10 @@ export default function PanelDrawer() {
   const setCoordenadasCapturadas = useUIStore((state) => state.setCoordenadasCapturadas);
 
   const catalogos = usePanelStore((state) => state.catalogos);
+  const paneles = usePanelStore((state) => state.paneles);
   const fetchData = usePanelStore((state) => state.fetchData);
   const flyTo = useUIStore((state) => state.flyTo);
+  const setPuntoSimulacion = useUIStore((state) => state.setPuntoSimulacion);
 
   // Estados del Formulario
   const [formData, setFormData] = useState<Partial<Panel>>({});
@@ -70,6 +86,52 @@ export default function PanelDrawer() {
       setCoordenadasCapturadas(null);
     }
   }, [coordenadasCapturadas, setModoCaptura, setCoordenadasCapturadas]);
+
+  // Determinar radio normativo según el Tipo de EPE seleccionado (Arquitectura abierta y escalable)
+  const nombreTipoEpe = catalogos.tiposEPE.find((t) => t.id === formData.tipoEPEId)?.nombre || '';
+  const radioNormativo = DISTANCIAS_MINIMAS_EPE[nombreTipoEpe] || DISTANCIAS_MINIMAS_EPE.default;
+
+  // Sensor Inteligente de Proximidad: Evaluar vecinos dentro del radio de protección
+  const conflictosProximidad = React.useMemo(() => {
+    if (formData.latitud == null || formData.longitud == null || isNaN(formData.latitud) || isNaN(formData.longitud)) {
+      return [];
+    }
+
+    const lat = Number(formData.latitud);
+    const lon = Number(formData.longitud);
+
+    return paneles
+      .filter((p) => p.id !== panelEnEdicion?.id && p.latitud != null && p.longitud != null)
+      .map((p) => {
+        const distancia = calcularDistanciaMetros(lat, lon, p.latitud, p.longitud);
+        return {
+          panel: p,
+          distancia: Math.round(distancia),
+        };
+      })
+      .filter((item) => item.distancia < radioNormativo)
+      .sort((a, b) => a.distancia - b.distancia);
+  }, [formData.latitud, formData.longitud, radioNormativo, paneles, panelEnEdicion]);
+
+  // Sincronizar el radio de protección y punto en el mapa (Sensor en tiempo real)
+  useEffect(() => {
+    if (formData.latitud != null && formData.longitud != null && !isNaN(formData.latitud) && !isNaN(formData.longitud)) {
+      setPuntoSimulacion({
+        lat: Number(formData.latitud),
+        lng: Number(formData.longitud),
+        radio: radioNormativo,
+      });
+    } else {
+      setPuntoSimulacion(null);
+    }
+  }, [formData.latitud, formData.longitud, radioNormativo, setPuntoSimulacion]);
+
+  // Limpiar punto al cerrar
+  useEffect(() => {
+    return () => {
+      setPuntoSimulacion(null);
+    };
+  }, [setPuntoSimulacion]);
 
   if (!isOpen) return null;
 
@@ -152,7 +214,12 @@ export default function PanelDrawer() {
   };
 
   return (
-    <div className={styles.drawerBackdrop} onClick={cerrarDrawer}>
+    <div
+      className={`${styles.drawerBackdrop} ${modoCaptura ? styles.drawerBackdropPicking : ''}`}
+      onClick={() => {
+        if (!modoCaptura) cerrarDrawer();
+      }}
+    >
       <aside className={styles.drawerContainer} onClick={(e) => e.stopPropagation()}>
         {/* Cabecera del Drawer */}
         <div className={styles.drawerHeader}>
@@ -185,7 +252,7 @@ export default function PanelDrawer() {
           <div className={styles.sectionBox}>
             <div className={styles.sectionHeading}>
               <span>1. Identificación y Ubicación Obligatoria</span>
-              <span style={{ color: '#EF4444', fontSize: '10px' }}>* Requeridos</span>
+              <span style={{ color: '#0F172A', fontWeight: 800, fontSize: '10px' }}>* Requeridos</span>
             </div>
 
             <div className={styles.fieldGroup}>
@@ -305,6 +372,30 @@ export default function PanelDrawer() {
                 {errors.empresaId && <span className={styles.errorText}>{errors.empresaId}</span>}
               </div>
             </div>
+
+            {/* SENSOR INTELIGENTE DE PROXIMIDAD VIAL */}
+            {conflictosProximidad.length > 0 && (
+              <div className={`${styles.proximityWarningCard} ${styles.blockWarning}`}>
+                <div className={styles.proximityWarningHeader}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span>Alerta Normativa MML: Conflicto de Proximidad ({radioNormativo}m)</span>
+                </div>
+                <p className={styles.proximityWarningText}>
+                  La ubicación interseca el radio de protección normativo ({radioNormativo} m para {nombreTipoEpe || 'este soporte'}). No se permite agregar por saturación vial:
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {conflictosProximidad.slice(0, 3).map((c) => (
+                    <div key={c.panel.id} className={styles.conflictItem}>
+                      ⚠️ Panel {c.panel.codigo} ({c.panel.empresa || 'Sin empresa'}): a solo <strong>{c.distancia} metros</strong> (Mínimo: {radioNormativo}m)
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* SECCIÓN 2: ESPECIFICACIONES TÉCNICAS Y DIMENSIONES (SECUNDARIAS) */}
@@ -462,7 +553,12 @@ export default function PanelDrawer() {
             <button type="button" className={styles.cancelBtn} onClick={cerrarDrawer} disabled={isSubmitting}>
               Cancelar
             </button>
-            <button type="submit" className={styles.saveBtn} disabled={isSubmitting}>
+            <button
+              type="submit"
+              className={styles.saveBtn}
+              disabled={isSubmitting || conflictosProximidad.length > 0}
+              title={conflictosProximidad.length > 0 ? 'No se puede agregar: Incumple la distancia mínima normativa' : ''}
+            >
               {isSubmitting ? 'Guardando en BD...' : panelEnEdicion ? 'Actualizar Panel' : 'Guardar Panel'}
             </button>
           </div>

@@ -78,6 +78,19 @@ export const BREAKPOINTS = {
   desktop: 1280,
 };
 
+// --- Distancias mínimas normativas por Tipo de EPE (en metros) ---
+// Arquitectura abierta y escalable para la matriz técnica MML
+export const DISTANCIAS_MINIMAS_EPE: Record<string, number> = {
+  'Panel monumental': 100,
+  'Panel monumental unipolar': 100,
+  'Panel monumental volumétrico': 100,
+  'Panel simple': 75,
+  'Tótem': 50,
+  'Paleta publicitaria': 30,
+  'Mobiliario urbano - nomenclatura de vías': 25,
+  default: 100,
+};
+
 // --- Meses cortos para vencimientos ---
 export const MESES_CORTOS = [
   'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',

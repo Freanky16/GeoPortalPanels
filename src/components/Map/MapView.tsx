@@ -36,6 +36,12 @@ const RADIO_ALL_BUFFER_LINE_LAYER = 'radio-all-buffer-line';
 const CORREDOR_BEACONS_SOURCE_ID = 'corredor-beacons-source';
 const CORREDOR_PULSE_WAVE_LAYER = 'corredor-pulse-wave';
 
+// Simulación de Nuevo Panel / Sensor de Proximidad
+const SIMULACION_SOURCE_ID = 'simulacion-source';
+const SIMULACION_BUFFER_FILL_LAYER = 'simulacion-buffer-fill';
+const SIMULACION_BUFFER_LINE_LAYER = 'simulacion-buffer-line';
+const SIMULACION_POINT_LAYER = 'simulacion-point';
+
 /**
  * Genera un polígono GeoJSON circular con radio en metros
  */
@@ -172,6 +178,7 @@ export default function MapView() {
   const corredorActivo = useUIStore((state) => state.corredorActivo);
   const modoCapturaCoordenadas = useUIStore((state) => state.modoCapturaCoordenadas);
   const setCoordenadasCapturadas = useUIStore((state) => state.setCoordenadasCapturadas);
+  const puntoSimulacion = useUIStore((state) => state.puntoSimulacion);
 
   // Hook que retorna los paneles filtrados en tiempo real
   const panelesFiltrados = useFilteredPanels();
@@ -480,6 +487,63 @@ export default function MapView() {
         },
         PANELES_HALO_LAYER
       );
+    }
+
+    // 10. Capa y fuente: Sensor de Proximidad / Simulación de Nuevo Panel
+    if (!mapInstance.getSource(SIMULACION_SOURCE_ID)) {
+      mapInstance.addSource(SIMULACION_SOURCE_ID, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+    }
+
+    if (!mapInstance.getLayer(SIMULACION_BUFFER_FILL_LAYER)) {
+      mapInstance.addLayer(
+        {
+          id: SIMULACION_BUFFER_FILL_LAYER,
+          type: 'fill',
+          source: SIMULACION_SOURCE_ID,
+          paint: {
+            'fill-color': '#06B6D4',
+            'fill-opacity': 0.22,
+          },
+          filter: ['==', '$type', 'Polygon'],
+        },
+        PANELES_HALO_LAYER
+      );
+    }
+
+    if (!mapInstance.getLayer(SIMULACION_BUFFER_LINE_LAYER)) {
+      mapInstance.addLayer(
+        {
+          id: SIMULACION_BUFFER_LINE_LAYER,
+          type: 'line',
+          source: SIMULACION_SOURCE_ID,
+          paint: {
+            'line-color': '#0891B2',
+            'line-width': 2.5,
+            'line-dasharray': [3, 2],
+            'line-opacity': 0.9,
+          },
+          filter: ['==', '$type', 'Polygon'],
+        },
+        PANELES_HALO_LAYER
+      );
+    }
+
+    if (!mapInstance.getLayer(SIMULACION_POINT_LAYER)) {
+      mapInstance.addLayer({
+        id: SIMULACION_POINT_LAYER,
+        type: 'circle',
+        source: SIMULACION_SOURCE_ID,
+        paint: {
+          'circle-radius': 9,
+          'circle-color': '#06B6D4',
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#FFFFFF',
+        },
+        filter: ['==', '$type', 'Point'],
+      });
     }
   }, []);
 
@@ -992,6 +1056,34 @@ export default function MapView() {
       }
     };
   }, [panelSeleccionado, mapReady]);
+
+  // 6.7. Visualización del Punto de Simulación y su Radio del Sensor de Proximidad
+  useEffect(() => {
+    if (!mapReady || !map.current) return;
+    const source = map.current.getSource(SIMULACION_SOURCE_ID) as maplibregl.GeoJSONSource;
+    if (!source) return;
+
+    if (puntoSimulacion) {
+      const circleFC = createGeoJSONCircle([puntoSimulacion.lng, puntoSimulacion.lat], puntoSimulacion.radio);
+      const pointFeature: GeoJSON.Feature = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [puntoSimulacion.lng, puntoSimulacion.lat],
+        },
+        properties: {
+          tipo: 'simulacion',
+        },
+      };
+
+      source.setData({
+        type: 'FeatureCollection',
+        features: [...circleFC.features, pointFeature],
+      });
+    } else {
+      source.setData({ type: 'FeatureCollection', features: [] });
+    }
+  }, [puntoSimulacion, mapReady]);
 
   return (
     <div className={styles.mapWrapper}>

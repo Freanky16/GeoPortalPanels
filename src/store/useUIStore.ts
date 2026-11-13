@@ -44,6 +44,10 @@ interface UIStore {
   coordenadasCapturadas: { lat: number; lng: number } | null;
   setCoordenadasCapturadas: (coords: { lat: number; lng: number } | null) => void;
 
+  // Punto preview / simulación en mapa para el Sensor de Proximidad
+  puntoSimulacion: { lat: number; lng: number; radio: number } | null;
+  setPuntoSimulacion: (punto: { lat: number; lng: number; radio: number } | null) => void;
+
   // Drawer de Edición / Creación de Paneles (Fase 2)
   drawerPanelAbierto: boolean;
   panelEnEdicion: Panel | null; // null = Nuevo panel; Panel = Editar panel existente
@@ -80,15 +84,17 @@ export const useUIStore = create<UIStore>((set) => ({
   leyendaAbierta: false,
   modoCapturaCoordenadas: false,
   coordenadasCapturadas: null,
+  puntoSimulacion: null,
   drawerPanelAbierto: false,
   panelEnEdicion: null,
 
   setModoCapturaCoordenadas: (val) => set({ modoCapturaCoordenadas: val }),
   setCoordenadasCapturadas: (coords) => set({ coordenadasCapturadas: coords }),
+  setPuntoSimulacion: (punto) => set({ puntoSimulacion: punto }),
 
   abrirDrawerNuevoPanel: () => set({ drawerPanelAbierto: true, panelEnEdicion: null }),
   abrirDrawerEditarPanel: (panel) => set({ drawerPanelAbierto: true, panelEnEdicion: panel }),
-  cerrarDrawerPanel: () => set({ drawerPanelAbierto: false, panelEnEdicion: null, modoCapturaCoordenadas: false }),
+  cerrarDrawerPanel: () => set({ drawerPanelAbierto: false, panelEnEdicion: null, modoCapturaCoordenadas: false, puntoSimulacion: null }),
 
   setCorredorActivo: (corredor) => set({ corredorActivo: corredor }),
   limpiarCorredorActivo: () => set({ corredorActivo: null }),
