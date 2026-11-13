@@ -1,0 +1,192 @@
+# MD-3: Rediseño Integral de la Base de Datos en Supabase
+
+**Proyecto:** Geoportal de Publicidad Exterior (SIGPE) — MML  
+**Fecha:** Noviembre 2026  
+**Documento:** MD-3 de 5 (Fase de Planificación Maestra)  
+**Estado:** Especificación de Arquitectura de Datos Aprobada  
+
+---
+
+## 1. Visión General y Estrategia de Seguridad
+
+Para garantizar el principio:  
+> **"SINCRONIZADO Y PENSANDO EN EL FUTURO: ACTUALIZACIÓN REAL Y CONEXIÓN BACKEND-FRONTEND-BASEDEDATOS"**
+
+El rediseño de Supabase se ejecutará **sin romper endpoints, vistas ni APIs**. La tabla `paneles` será el modelo central unificado: albergará tanto a paneles con contrato como a paneles sin contrato (reordenamientos / regularizaciones). Los campos que no apliquen a un panel sin contrato simplemente quedarán como `NULL` (vacíos) a nivel de base de datos, y en la interfaz visual no se mostrarán fichas vacías.
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        TABLA UNIFICADA: paneles                        │
+├────────────────────────────────────────────────────────────────────────┤
+│ • Campos Compartidos:                                                  │
+│   id, codigo, geom (lat/lon), via, distrito_id, empresa_id,            │
+│   tipo_epe_id, caracteristica_id, material_id                          │
+│                                                                        │
+│ • Campos Condicionales de Contrato:                                    │
+│   estado_contrato_id ───────► (6 Estados Oficiales)                    │
+│   numero_contrato    ───────► Texto libre (ej: 045-2022-MML) o NULL     │
+│   ficha_publicidad   ───────► Alfanumérico (ej: FP-104) o NULL         │
+│   ficha_contrato_ini ───────► Alfanumérico (ej: FCO-02) o NULL         │
+│   plazo_anios        ───────► Entero (ej: 5) o NULL                    │
+│   fecha_suscripcion  ───────► DATE (ej: 2023-05-12) o NULL             │
+│                                                                        │
+│ • Campos de Ingeniería y Dimensiones:                                  │
+│   tipo_via_id        ───────► (4 Jerarquías Oficiales)                 │
+│   espacio_pub_id     ───────► (8 Espacios Viales)                      │
+│   area_ocupacion, area_exhibicion, altura_poste, alto, largo, espesor  │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. Catálogos Oficiales y Nuevas Variables
+
+### A. Catálogo: `estados_contrato` (6 Variables Oficiales)
+Se actualiza la tabla o enum `estados_contrato` para reflejar con exactitud la situación legal metropolitana:
+
+| ID | Estado Contractual | ¿Tiene N° Contrato? | ¿Tiene Ficha Publicidad? |
+| :-: | :--- | :-: | :-: |
+| 1 | **Contrato de reordenamiento** | **SÍ** | **SÍ** |
+| 2 | **Sin contrato de reordenamiento** | NO (`NULL`) | NO (`NULL`) |
+| 3 | **Autorizado por GDU** | **SÍ** | NO (`NULL`) |
+| 4 | **Contrato de usufructo (primera convocatoria)** | **SÍ** | **SÍ** |
+| 5 | **En proceso de segunda convocatoria** | NO (`NULL`) | NO (`NULL`) |
+| 6 | **En proceso de tercera convocatoria** | NO (`NULL`) | NO (`NULL`) |
+
+---
+
+### B. Catálogo: `tipos_via` (4 Variables Oficiales)
+Estructura oficial para clasificar la jerarquía vial según el Sistema Vial Metropolitano:
+1. **Arterial**
+2. **Colectora**
+3. **Expresa**
+4. **Intercambio**
+
+---
+
+### C. Catálogo: `espacios_publicitarios` (8 Variables Oficiales)
+Ubicación física específica de la infraestructura dentro de la sección vial:
+1. **Bajo puente de intercambio**
+2. **Franja de vereda**
+3. **Isla de intercambio**
+4. **Puente peatonal**
+5. **Remanente de intercambio**
+6. **Separador central**
+7. **Separador lateral**
+8. **Túnel**
+
+---
+
+### D. Catálogo: `tipos_epe` (9 Variables y Radios Normativos)
+1. **Paleta publicitaria** (`radio_default_metros: 50`)
+2. **Panel monumental unipolar** (`radio_default_metros: 100`)
+3. **Panel monumental** (`radio_default_metros: 150`, regla 200m si vía es especial)
+4. **Panel monumental volumétrico** (`radio_default_metros: 150`)
+5. **Tótem** (`radio_default_metros: 75`)
+6. **Panel simple** (`radio_default_metros: 75`)
+7. **Mobiliario urbano - nomenclatura de vías** (`radio_default_metros: 0`)
+8. **Otro** (`radio_default_metros: 0`)
+
+---
+
+## 3. Nuevos Campos en la Tabla `paneles`
+
+Para no perder información y recibir limpiamente los nuevos Excel del ingeniero:
+
+| Nombre de Columna | Tipo de Dato SQL | Descripción / Propósito |
+| :--- | :--- | :--- |
+| `ficha_publicidad` | `VARCHAR(100)` | Código alfanumérico de la ficha técnica de publicidad exterior. |
+| `ficha_contrato_inicio`| `VARCHAR(100)` | Ficha de inicio de procedimiento contractual. |
+| `plazo_anios` | `INTEGER DEFAULT 5` | Plazo en años de vigencia del contrato (permite 5, 6, 8, etc.). |
+| `area_ocupacion` | `NUMERIC(10,2)` | Área de ocupación sobre suelo/vía pública ($m^2$). |
+| `area_exhibicion` | `NUMERIC(10,2)` | Área neta visual de exposición publicitaria ($m^2$). |
+| `altura_poste` | `NUMERIC(10,2)` | Altura desde el nivel del suelo hasta la base del panel ($m$). |
+| `alto` | `NUMERIC(10,2)` | Dimensión vertical de la estructura ($m$). |
+| `largo` | `NUMERIC(10,2)` | Dimensión horizontal de la estructura ($m$). |
+| `espesor` | `NUMERIC(10,2)` | Fondo o grosor volumétrico ($m$). |
+| `tipo_via_id` | `UUID FK` | Llave foránea hacia la tabla `tipos_via`. |
+| `espacio_pub_id` | `UUID FK` | Llave foránea hacia la tabla `espacios_publicitarios`. |
+
+---
+
+## 4. Plan de Ejecución Seguro: Vaciado y Regeneración Limpia
+
+### ¿Por qué NO se rompe la aplicación ni las APIs?
+La aplicación web consume los datos mediante dos Vistas SQL (`v_paneles_publicos` y `v_paneles_detalle`) y endpoints seguros. Si vaciamos los 400 registros antiguos con `TRUNCATE` o `DELETE`:
+1. La estructura de la base de datos se mantiene intacta.
+2. Las APIs seguirán respondiendo con código HTTP 200 (solo devolverán una lista de 0 paneles momentáneamente mientras corre el importador).
+3. No hay riesgo de romper llaves foráneas porque vaciaremos en el orden correcto de dependencias.
+
+### Script SQL Maestro (Esquema de Ejecución en Supabase)
+
+```sql
+-- 1. Respaldar o limpiar la tabla paneles de prueba
+TRUNCATE TABLE auditoria, contratos, paneles CASCADE;
+
+-- 2. Asegurar columnas nuevas en la tabla paneles
+ALTER TABLE paneles 
+  ADD COLUMN IF NOT EXISTS ficha_publicidad VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS ficha_contrato_inicio VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS plazo_anios INTEGER DEFAULT 5,
+  ADD COLUMN IF NOT EXISTS area_ocupacion NUMERIC(10,2),
+  ADD COLUMN IF NOT EXISTS area_exhibicion NUMERIC(10,2),
+  ADD COLUMN IF NOT EXISTS altura_poste NUMERIC(10,2),
+  ADD COLUMN IF NOT EXISTS alto NUMERIC(10,2),
+  ADD COLUMN IF NOT EXISTS largo NUMERIC(10,2),
+  ADD COLUMN IF NOT EXISTS espesor NUMERIC(10,2),
+  ADD COLUMN IF NOT EXISTS tipo_via_id UUID REFERENCES tipos_via(id),
+  ADD COLUMN IF NOT EXISTS espacio_pub_id UUID REFERENCES espacios_publicitarios(id);
+
+-- 3. Actualizar o insertar los 6 estados de contrato
+INSERT INTO estados_contrato (nombre, descripcion) VALUES
+  ('Contrato de reordenamiento', 'Con contrato y ficha de publicidad'),
+  ('Sin contrato de reordenamiento', 'Sin contrato ni ficha'),
+  ('Autorizado por GDU', 'Autorización de Gerencia de Desarrollo Urbano'),
+  ('Contrato de usufructo (primera convocatoria)', 'Usufructo 1ra convocatoria'),
+  ('En proceso de segunda convocatoria', 'Proceso licitatorio 2da conv.'),
+  ('En proceso de tercera convocatoria', 'Proceso licitatorio 3ra conv.')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- 4. Re-crear vistas para incluir los nuevos campos sin alterar contratos anteriores
+CREATE OR REPLACE VIEW v_paneles_detalle AS
+SELECT 
+  p.*,
+  d.nombre AS distrito,
+  e.nombre AS empresa,
+  te.nombre AS tipo_epe,
+  tv.nombre AS tipo_via,
+  ep.nombre AS espacio_publicitario
+FROM paneles p
+LEFT JOIN distritos d ON p.distrito_id = d.id
+LEFT JOIN empresas e ON p.empresa_id = e.id
+LEFT JOIN tipos_epe te ON p.tipo_epe_id = te.id
+LEFT JOIN tipos_via tv ON p.tipo_via_id = tv.id
+LEFT JOIN espacios_publicitarios ep ON p.espacio_pub_id = ep.id;
+```
+
+---
+
+## 5. Actualización de Tipos y Sincronización Total (Backend - Frontend - Base de Datos)
+
+Siguiendo el principio de **"SINCRONIZADO Y PENSANDO EN EL FUTURO: ACTUALIZACIÓN REAL Y CONEXIÓN BACKEND-FRONTEND-BASEDEDATOS"**:
+
+1. **Sincronización en la Base de Datos (`Supabase`):**
+   * Nuevas columnas agregadas a la tabla `paneles`.
+   * Vistas SQL `v_paneles_publicos` y `v_paneles_detalle` actualizadas con `LEFT JOIN` hacia los catálogos para que emitan los nombres resueltos (`tipo_via`, `espacio_publicitario`, `estado_contrato`, etc.).
+2. **Sincronización en el Backend (`API Routes`):**
+   * El endpoint `src/app/api/paneles/route.ts` se actualiza para recibir y persistir todos los nuevos campos (tanto en `INSERT` como en `UPDATE`).
+   * Validación de tipos en el servidor para evitar discrepancias de datos.
+3. **Sincronización en el Frontend (`TypeScript & Zustand Store`):**
+   * Archivo [types/index.ts](file:///d:/ProyectoMapsHoarding/src/types/index.ts): Se extienden las interfaces `Panel` y `PanelFiltros` con todas las nuevas entidades (`ficha_publicidad?`, `ficha_contrato_inicio?`, `plazo_anios?`, `area_ocupacion?`, `area_exhibicion?`, `altura_poste?`, `alto?`, `largo?`, `espesor?`, `tipo_via?`, `espacio_publicitario?`).
+   * Ficha de visualización ([PanelCard.tsx](file:///d:/ProyectoMapsHoarding/src/components/Panel/PanelCard.tsx)): Muestra las nuevas especificaciones solo cuando contengan datos reales; si el panel es sin contrato y estos campos están vacíos (`NULL`), no se renderizan espacios en blanco innecesarios.
+   * Drawer de edición ([PanelDrawer.tsx](file:///d:/ProyectoMapsHoarding/src/components/Panel/PanelDrawer.tsx)): Carga y edita de forma sincronizada cada uno de estos nuevos campos en tiempo real.
+4. **Verificación de Cero Errores:**
+   * Ejecución obligatoria de `npx tsc --noEmit` para certificar que el 100% del sistema compila limpiamente sin fallos de tipos.
+
+---
+
+## 6. Estado y Próximos Pasos
+
+* **Documento MD-3:** Completado y guardado en el proyecto.
+* **Próximo Documento:** **MD-4: Plan de Importación Masiva desde los Excel del Ingeniero (Estructura de Script, Mapeo de Columnas y Limpieza de Inconsistencias)**.
+

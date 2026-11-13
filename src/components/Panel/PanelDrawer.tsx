@@ -38,6 +38,7 @@ export default function PanelDrawer() {
   // Estados del Formulario
   const [formData, setFormData] = useState<Partial<Panel>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [validationAlert, setValidationAlert] = useState(false);
   const [showConfirmIncomplete, setShowConfirmIncomplete] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -52,8 +53,8 @@ export default function PanelDrawer() {
           latitud: undefined,
           longitud: undefined,
           direccion: '',
-          distritoId: catalogos.distritos[0]?.id || '',
-          empresaId: catalogos.empresas[0]?.id || '',
+          distritoId: '',
+          empresaId: '',
           tipoViaId: '',
           espacioPublicitarioId: '',
           tipoEPEId: '',
@@ -70,9 +71,10 @@ export default function PanelDrawer() {
         });
       }
       setErrors({});
+      setValidationAlert(false);
       setShowConfirmIncomplete(false);
     }
-  }, [isOpen, panelEnEdicion, catalogos]);
+  }, [isOpen, panelEnEdicion]);
 
   // Si el usuario capturó un punto en el mapa, actualizar latitud y longitud automáticamente
   useEffect(() => {
@@ -141,6 +143,9 @@ export default function PanelDrawer() {
       setErrors((prev) => {
         const next = { ...prev };
         delete next[field];
+        if (Object.keys(next).length === 0) {
+          setValidationAlert(false);
+        }
         return next;
       });
     }
@@ -148,15 +153,18 @@ export default function PanelDrawer() {
 
   const validarCamposPrincipales = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.codigo?.trim()) newErrors.codigo = 'El código oficial es obligatorio.';
-    if (formData.latitud == null || isNaN(Number(formData.latitud))) newErrors.latitud = 'Latitud requerida.';
-    if (formData.longitud == null || isNaN(Number(formData.longitud))) newErrors.longitud = 'Longitud requerida.';
-    if (!formData.direccion?.trim()) newErrors.direccion = 'La dirección / vía es obligatoria.';
-    if (!formData.distritoId) newErrors.distritoId = 'Selecciona un distrito.';
-    if (!formData.empresaId) newErrors.empresaId = 'Selecciona una empresa.';
+    if (!formData.codigo?.trim()) newErrors.codigo = 'Requerido';
+    if (formData.latitud == null || isNaN(Number(formData.latitud))) newErrors.latitud = 'Requerido';
+    if (formData.longitud == null || isNaN(Number(formData.longitud))) newErrors.longitud = 'Requerido';
+    if (!formData.direccion?.trim()) newErrors.direccion = 'Requerido';
+    if (!formData.distritoId) newErrors.distritoId = 'Requerido';
+    if (!formData.empresaId) newErrors.empresaId = 'Requerido';
+    if (!formData.tipoEPEId) newErrors.tipoEPEId = 'Requerido';
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const hasErrors = Object.keys(newErrors).length > 0;
+    setValidationAlert(hasErrors);
+    return !hasErrors;
   };
 
   const faltanSecundarios = () => {
@@ -234,7 +242,7 @@ export default function PanelDrawer() {
               <h2 className={styles.drawerTitle}>
                 {panelEnEdicion ? `Editar Panel ${panelEnEdicion.codigo}` : 'Registrar Nuevo Panel'}
               </h2>
-              <span className={styles.drawerSubtitle}>Gestión Técnica Directa en Base de Datos</span>
+              <span className={styles.drawerSubtitle}>Gestión Técnica</span>
             </div>
           </div>
 
@@ -251,32 +259,28 @@ export default function PanelDrawer() {
           {/* SECCIÓN 1: IDENTIFICACIÓN Y UBICACIÓN (OBLIGATORIOS) */}
           <div className={styles.sectionBox}>
             <div className={styles.sectionHeading}>
-              <span>1. Identificación y Ubicación Obligatoria</span>
-              <span style={{ color: '#0F172A', fontWeight: 800, fontSize: '10px' }}>* Requeridos</span>
+              <span>1. Identificación y Ubicación</span>
             </div>
 
             <div className={styles.fieldGroup}>
               <label className={styles.label}>
-                Código Oficial del Panel <span className={styles.reqStar}>*</span>
+                Código del Panel
               </label>
               <input
                 type="text"
-                placeholder="Ej: 401_NAP"
                 value={formData.codigo || ''}
                 onChange={(e) => handleChange('codigo', e.target.value.toUpperCase())}
                 className={`${styles.input} ${errors.codigo ? styles.inputError : ''}`}
                 autoFocus
               />
-              {errors.codigo && <span className={styles.errorText}>{errors.codigo}</span>}
             </div>
 
             {/* Asignación Geográfica */}
             <div className={styles.coordsBox}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className={styles.label}>
-                  Coordenadas Geodésicas WGS84 <span className={styles.reqStar}>*</span>
+                  Coordenadas
                 </span>
-                <span style={{ fontSize: '10px', color: '#64748B' }}>Precisión Ilimitada</span>
               </div>
 
               <button
@@ -291,7 +295,7 @@ export default function PanelDrawer() {
                   <line x1="12" y1="6" x2="12" y2="2" />
                   <line x1="12" y1="22" x2="12" y2="18" />
                 </svg>
-                <span>{modoCaptura ? 'Haz clic en el mapa para marcar...' : '📍 Marcar en Mapa'}</span>
+                <span>{modoCaptura ? 'Haz clic en el mapa para marcar...' : 'Marcar en Mapa'}</span>
               </button>
 
               <div className={styles.coordsGrid}>
@@ -300,12 +304,10 @@ export default function PanelDrawer() {
                   <input
                     type="number"
                     step="any"
-                    placeholder="-12.06535376"
                     value={formData.latitud ?? ''}
                     onChange={(e) => handleChange('latitud', e.target.value ? parseFloat(e.target.value) : undefined)}
                     className={`${styles.input} ${errors.latitud ? styles.inputError : ''}`}
                   />
-                  {errors.latitud && <span className={styles.errorText}>{errors.latitud}</span>}
                 </div>
 
                 <div className={styles.fieldGroup}>
@@ -313,64 +315,74 @@ export default function PanelDrawer() {
                   <input
                     type="number"
                     step="any"
-                    placeholder="-77.03906696"
                     value={formData.longitud ?? ''}
                     onChange={(e) => handleChange('longitud', e.target.value ? parseFloat(e.target.value) : undefined)}
                     className={`${styles.input} ${errors.longitud ? styles.inputError : ''}`}
                   />
-                  {errors.longitud && <span className={styles.errorText}>{errors.longitud}</span>}
                 </div>
               </div>
             </div>
 
             <div className={styles.fieldGroup}>
               <label className={styles.label}>
-                Dirección / Vía <span className={styles.reqStar}>*</span>
+                Vía / Dirección
               </label>
               <input
                 type="text"
-                placeholder="Ej: Av. Salaverry Cdra. 1 / Av. 28 de Julio"
                 value={formData.direccion || ''}
                 onChange={(e) => handleChange('direccion', e.target.value)}
                 className={`${styles.input} ${errors.direccion ? styles.inputError : ''}`}
               />
-              {errors.direccion && <span className={styles.errorText}>{errors.direccion}</span>}
             </div>
 
             <div className={styles.twoCols}>
               <div className={styles.fieldGroup}>
                 <label className={styles.label}>
-                  Distrito <span className={styles.reqStar}>*</span>
+                  Distrito
                 </label>
                 <select
                   value={formData.distritoId || ''}
                   onChange={(e) => handleChange('distritoId', e.target.value)}
                   className={`${styles.select} ${errors.distritoId ? styles.inputError : ''}`}
                 >
-                  <option value="">Seleccionar Distrito...</option>
+                  <option value="">-- Selecciona un distrito --</option>
                   {catalogos.distritos.map((d) => (
                     <option key={d.id} value={d.id}>{d.nombre}</option>
                   ))}
                 </select>
-                {errors.distritoId && <span className={styles.errorText}>{errors.distritoId}</span>}
               </div>
 
               <div className={styles.fieldGroup}>
                 <label className={styles.label}>
-                  Empresa Concesionaria <span className={styles.reqStar}>*</span>
+                  Empresa Concesionaria
                 </label>
                 <select
                   value={formData.empresaId || ''}
                   onChange={(e) => handleChange('empresaId', e.target.value)}
                   className={`${styles.select} ${errors.empresaId ? styles.inputError : ''}`}
                 >
-                  <option value="">Seleccionar Empresa...</option>
+                  <option value="">-- Selecciona una empresa --</option>
                   {catalogos.empresas.map((em) => (
                     <option key={em.id} value={em.id}>{em.nombre}</option>
                   ))}
                 </select>
-                {errors.empresaId && <span className={styles.errorText}>{errors.empresaId}</span>}
               </div>
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <label className={styles.label}>
+                Tipo de Publicidad (EPE)
+              </label>
+              <select
+                value={formData.tipoEPEId || ''}
+                onChange={(e) => handleChange('tipoEPEId', e.target.value)}
+                className={`${styles.select} ${errors.tipoEPEId ? styles.inputError : ''}`}
+              >
+                <option value="">-- Selecciona tipo de publicidad --</option>
+                {catalogos.tiposEPE.map((t) => (
+                  <option key={t.id} value={t.id}>{t.nombre}</option>
+                ))}
+              </select>
             </div>
 
             {/* SENSOR INTELIGENTE DE PROXIMIDAD VIAL */}
@@ -407,20 +419,6 @@ export default function PanelDrawer() {
 
             <div className={styles.twoCols}>
               <div className={styles.fieldGroup}>
-                <label className={styles.label}>Tipo de Soporte EPE</label>
-                <select
-                  value={formData.tipoEPEId || ''}
-                  onChange={(e) => handleChange('tipoEPEId', e.target.value)}
-                  className={styles.select}
-                >
-                  <option value="">(Sin clasificar)</option>
-                  {catalogos.tiposEPE.map((t) => (
-                    <option key={t.id} value={t.id}>{t.nombre}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.fieldGroup}>
                 <label className={styles.label}>Material Predominante</label>
                 <select
                   value={formData.materialPredominanteId || ''}
@@ -433,9 +431,7 @@ export default function PanelDrawer() {
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div className={styles.twoCols}>
               <div className={styles.fieldGroup}>
                 <label className={styles.label}>Iluminación / Característica</label>
                 <select
@@ -449,20 +445,20 @@ export default function PanelDrawer() {
                   ))}
                 </select>
               </div>
+            </div>
 
-              <div className={styles.fieldGroup}>
-                <label className={styles.label}>Espacio de Instalación</label>
-                <select
-                  value={formData.espacioPublicitarioId || ''}
-                  onChange={(e) => handleChange('espacioPublicitarioId', e.target.value)}
-                  className={styles.select}
-                >
-                  <option value="">(Sin clasificar)</option>
-                  {catalogos.espaciosPublicitarios.map((sp) => (
-                    <option key={sp.id} value={sp.id}>{sp.nombre}</option>
-                  ))}
-                </select>
-              </div>
+            <div className={styles.fieldGroup}>
+              <label className={styles.label}>Espacio de Instalación</label>
+              <select
+                value={formData.espacioPublicitarioId || ''}
+                onChange={(e) => handleChange('espacioPublicitarioId', e.target.value)}
+                className={styles.select}
+              >
+                <option value="">(Sin clasificar)</option>
+                {catalogos.espaciosPublicitarios.map((sp) => (
+                  <option key={sp.id} value={sp.id}>{sp.nombre}</option>
+                ))}
+              </select>
             </div>
 
             <div className={styles.fourCols}>
@@ -471,7 +467,6 @@ export default function PanelDrawer() {
                 <input
                   type="number"
                   step="0.01"
-                  placeholder="Ej: 3.5"
                   value={formData.alto ?? ''}
                   onChange={(e) => handleChange('alto', e.target.value ? parseFloat(e.target.value) : null)}
                   className={styles.input}
@@ -483,7 +478,6 @@ export default function PanelDrawer() {
                 <input
                   type="number"
                   step="0.01"
-                  placeholder="Ej: 7.2"
                   value={formData.largo ?? ''}
                   onChange={(e) => handleChange('largo', e.target.value ? parseFloat(e.target.value) : null)}
                   className={styles.input}
@@ -495,7 +489,6 @@ export default function PanelDrawer() {
                 <input
                   type="number"
                   step="0.01"
-                  placeholder="Ej: 12.0"
                   value={formData.alturaPoste ?? ''}
                   onChange={(e) => handleChange('alturaPoste', e.target.value ? parseFloat(e.target.value) : null)}
                   className={styles.input}
@@ -507,7 +500,6 @@ export default function PanelDrawer() {
                 <input
                   type="number"
                   step="0.01"
-                  placeholder="Ej: 25.2"
                   value={formData.areaExhibicion ?? ''}
                   onChange={(e) => handleChange('areaExhibicion', e.target.value ? parseFloat(e.target.value) : null)}
                   className={styles.input}
@@ -528,7 +520,6 @@ export default function PanelDrawer() {
                 <label className={styles.label}>N° Registro FRAP</label>
                 <input
                   type="text"
-                  placeholder="Ej: NAP202512-0001"
                   value={formData.registroFRAP || ''}
                   onChange={(e) => handleChange('registroFRAP', e.target.value)}
                   className={styles.input}
@@ -539,7 +530,6 @@ export default function PanelDrawer() {
                 <label className={styles.label}>N° Contrato</label>
                 <input
                   type="text"
-                  placeholder="Ej: 0001-2025-R"
                   value={formData.numeroContrato || ''}
                   onChange={(e) => handleChange('numeroContrato', e.target.value)}
                   className={styles.input}
@@ -547,6 +537,18 @@ export default function PanelDrawer() {
               </div>
             </div>
           </div>
+
+          {/* Aviso de validación dinámica de campos obligatorios */}
+          {validationAlert && (
+            <div className={styles.validationAlertFooter}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>Faltan campos obligatorios por completar</span>
+            </div>
+          )}
 
           {/* Botones de Acción */}
           <div className={styles.drawerFooter}>

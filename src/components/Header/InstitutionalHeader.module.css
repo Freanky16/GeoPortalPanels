@@ -214,12 +214,12 @@
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
-  background: #E6F4EA;
-  border: 1px solid #CEEAD6;
+  background: #F0FDFA;
+  border: 1px solid #CCFBF1;
   border-radius: 20px;
   font-size: 11px;
   font-weight: 700;
-  color: #137333;
+  color: #0F766E;
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
@@ -227,9 +227,9 @@
 .pulseDot {
   width: 7px;
   height: 7px;
-  background: #1E8E3E;
+  background: #0D9488;
   border-radius: 50%;
-  box-shadow: 0 0 6px #1E8E3E;
+  box-shadow: 0 0 6px #0D9488;
   animation: pulse 2s infinite;
   flex-shrink: 0;
 }
