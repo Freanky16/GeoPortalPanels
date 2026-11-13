@@ -190,3 +190,41 @@ Siguiendo el principio de **"SINCRONIZADO Y PENSANDO EN EL FUTURO: ACTUALIZACIÓ
 * **Documento MD-3:** Completado y guardado en el proyecto.
 * **Próximo Documento:** **MD-4: Plan de Importación Masiva desde los Excel del Ingeniero (Estructura de Script, Mapeo de Columnas y Limpieza de Inconsistencias)**.
 
+---
+
+## 7. Notas Heredadas del MD-2 (Matriz de Distanciamiento Normativo)
+
+Las siguientes acciones fueron recomendadas al cierre del MD-2 y deben ejecutarse como parte del rediseño de base de datos de este MD-3:
+
+1. **Agregar columna `radio_default_metros`** (INTEGER) en la tabla catálogo `tipos_epe` de Supabase. Esto permitirá que el frontend lea los radios normativos directamente de la BD en lugar del diccionario hardcodeado en `constants.ts`, y si la MML cambia una ordenanza solo se actualiza 1 fila.
+2. **Modificar el frontend** para que al cargar los catálogos, el radio venga incluido en cada `TipoEPE` y se use dinámicamente.
+3. **Evaluar `es_via_especial`** al vuelo en la vista SQL usando `ILIKE` sobre el campo `direccion` (Panamericana, Carretera Central, Ramiro Prialé), o bien agregarlo como columna BOOLEAN computada.
+4. **Auditoría de datos:** Al reimportar los paneles con el Excel limpio (MD-4), validar que cada registro tenga correctamente asignados su `tipo_epe_id` y su `direccion` para que el sensor de proximidad funcione al 100%.
+
+---
+
+## 8. Registro de Ejecución Parcial
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ PASO DEL MD-3                                    │ ESTADO                   │
+├──────────────────────────────────────────────────┼──────────────────────────┤
+│ 4.1 Vaciado limpio de la tabla paneles           │ ✅ COMPLETADO            │
+│     (400 registros eliminados sin tocar           │    13/Nov/2026 05:17 AM  │
+│      estructura, catálogos, vistas ni APIs)       │    Verificado: 0 paneles │
+│                                                   │                          │
+│ 4.2 Agregar columnas nuevas (ALTER TABLE)         │ ⏳ PENDIENTE             │
+│                                                   │                          │
+│ 4.3 Insertar 6 estados de contrato oficiales     │ ⏳ PENDIENTE             │
+│                                                   │                          │
+│ 4.4 Agregar radio_default_metros a tipos_epe     │ ⏳ PENDIENTE             │
+│                                                   │                          │
+│ 4.5 Actualizar vistas SQL (v_paneles_detalle,    │ ⏳ PENDIENTE             │
+│     v_paneles_publicos)                           │                          │
+│                                                   │                          │
+│ 4.6 Sincronizar tipos TypeScript y API routes    │ ⏳ PENDIENTE             │
+│                                                   │                          │
+│ 4.7 Verificación npx tsc --noEmit                │ ⏳ PENDIENTE             │
+└──────────────────────────────────────────────────┴──────────────────────────┘
+```
+
