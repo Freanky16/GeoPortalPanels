@@ -5,7 +5,7 @@ import styles from './PanelDrawer.module.css';
 import { useUIStore } from '@/store/useUIStore';
 import { usePanelStore } from '@/store/usePanelStore';
 import { Panel } from '@/types';
-import { DISTANCIAS_MINIMAS_EPE } from '@/lib/constants';
+import { obtenerRadioNormativo, esViaEspecial } from '@/lib/constants';
 
 // Cálculo geodésico exacto (Fórmula de Haversine en metros)
 function calcularDistanciaMetros(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -91,13 +91,21 @@ export default function PanelDrawer() {
     }
   }, [coordenadasCapturadas, setModoCaptura, setCoordenadasCapturadas, flyTo]);
 
-  // Determinar radio normativo según el Tipo de EPE seleccionado (Arquitectura abierta y escalable)
+  // Determinar radio normativo según el Tipo de EPE y Dirección (Matriz oficial MML con regla de Vía Especial 200m)
   const nombreTipoEpe = catalogos.tiposEPE.find((t) => t.id === formData.tipoEPEId)?.nombre || '';
-  const radioNormativo = DISTANCIAS_MINIMAS_EPE[nombreTipoEpe] || DISTANCIAS_MINIMAS_EPE.default;
+  const radioNormativo = formData.tipoEPEId ? obtenerRadioNormativo(nombreTipoEpe, formData.direccion) : 0;
+  const esDireccionViaEspecial = esViaEspecial(formData.direccion);
 
   // Sensor Inteligente de Proximidad: Evaluar vecinos dentro del radio de protección
+  // Regla normativa: si cualquiera de los dos elementos tiene radio 0m (Mobiliario, etc.), no genera bloqueo.
   const conflictosProximidad = React.useMemo(() => {
-    if (formData.latitud == null || formData.longitud == null || isNaN(formData.latitud) || isNaN(formData.longitud)) {
+    if (
+      formData.latitud == null ||
+      formData.longitud == null ||
+      isNaN(formData.latitud) ||
+      isNaN(formData.longitud) ||
+      radioNormativo === 0
+    ) {
       return [];
     }
 
@@ -108,27 +116,40 @@ export default function PanelDrawer() {
       .filter((p) => p.id !== panelEnEdicion?.id && p.latitud != null && p.longitud != null)
       .map((p) => {
         const distancia = calcularDistanciaMetros(lat, lon, p.latitud, p.longitud);
+        // Radio del panel vecino existente
+        const radioVecino = obtenerRadioNormativo(p.tipoEPE, p.direccion);
+        // La restricción es el máximo entre ambos radios si ambos tienen restricción espacial (> 0)
+        const radioMinimoRequerido = Math.max(radioNormativo, radioVecino);
+
         return {
           panel: p,
           distancia: Math.round(distancia),
+          radioVecino,
+          radioMinimoRequerido,
         };
       })
-      .filter((item) => item.distancia < radioNormativo)
+      .filter((item) => item.radioVecino > 0 && item.distancia < item.radioMinimoRequerido)
       .sort((a, b) => a.distancia - b.distancia);
   }, [formData.latitud, formData.longitud, radioNormativo, paneles, panelEnEdicion]);
 
   // Sincronizar el radio de protección y punto en el mapa (Sensor en tiempo real)
   useEffect(() => {
-    if (formData.latitud != null && formData.longitud != null && !isNaN(formData.latitud) && !isNaN(formData.longitud)) {
+    if (
+      formData.latitud != null &&
+      formData.longitud != null &&
+      !isNaN(formData.latitud) &&
+      !isNaN(formData.longitud)
+    ) {
       setPuntoSimulacion({
         lat: Number(formData.latitud),
         lng: Number(formData.longitud),
         radio: radioNormativo,
+        enConflicto: conflictosProximidad.length > 0,
       });
     } else {
       setPuntoSimulacion(null);
     }
-  }, [formData.latitud, formData.longitud, radioNormativo, setPuntoSimulacion]);
+  }, [formData.latitud, formData.longitud, radioNormativo, conflictosProximidad.length, setPuntoSimulacion]);
 
   // Limpiar punto al cerrar
   useEffect(() => {
@@ -369,9 +390,16 @@ export default function PanelDrawer() {
             </div>
 
             <div className={styles.fieldGroup}>
-              <label className={styles.label}>
-                Tipo de Publicidad (EPE)
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label className={styles.label}>
+                  Tipo de Publicidad (EPE)
+                </label>
+                {radioNormativo > 0 && (
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#0D9488' }}>
+                    Radio normativo: {radioNormativo} m {esDireccionViaEspecial && nombreTipoEpe.includes('monumental') ? '(Vía Especial)' : ''}
+                  </span>
+                )}
+              </div>
               <select
                 value={formData.tipoEPEId || ''}
                 onChange={(e) => handleChange('tipoEPEId', e.target.value)}
@@ -396,12 +424,12 @@ export default function PanelDrawer() {
                   <span>Alerta Normativa MML: Conflicto de Proximidad ({radioNormativo}m)</span>
                 </div>
                 <p className={styles.proximityWarningText}>
-                  La ubicación interseca el radio de protección normativo ({radioNormativo} m para {nombreTipoEpe || 'este soporte'}). No se permite agregar por saturación vial:
+                  La ubicación interseca la zona de protección vial ({radioNormativo} m para {nombreTipoEpe || 'este soporte'}). Saturación detectada:
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {conflictosProximidad.slice(0, 3).map((c) => (
                     <div key={c.panel.id} className={styles.conflictItem}>
-                      ⚠️ Panel {c.panel.codigo} ({c.panel.empresa || 'Sin empresa'}): a solo <strong>{c.distancia} metros</strong> (Mínimo: {radioNormativo}m)
+                      ⚠️ Panel {c.panel.codigo} ({c.panel.empresa || 'Sin empresa'}): a solo <strong>{c.distancia} metros</strong> (Distancia requerida: {c.radioMinimoRequerido} m)
                     </div>
                   ))}
                 </div>

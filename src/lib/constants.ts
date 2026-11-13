@@ -78,18 +78,72 @@ export const BREAKPOINTS = {
   desktop: 1280,
 };
 
-// --- Distancias mínimas normativas por Tipo de EPE (en metros) ---
-// Arquitectura abierta y escalable para la matriz técnica MML
+// --- Distancias mínimas normativas por Tipo de EPE (en metros) - Matriz Oficial MML ---
+// El distanciamiento corresponde al radio de influencia (R) medido desde el eje del soporte.
 export const DISTANCIAS_MINIMAS_EPE: Record<string, number> = {
-  'Panel monumental': 100,
+  'Paleta publicitaria': 50,
   'Panel monumental unipolar': 100,
-  'Panel monumental volumétrico': 100,
+  'Panel monumental': 150, // Regular (150m) o Vía Especial (200m)
+  'Panel monumental volumétrico': 150,
+  'Tótem': 75,
   'Panel simple': 75,
-  'Tótem': 50,
-  'Paleta publicitaria': 30,
-  'Mobiliario urbano - nomenclatura de vías': 25,
+  'Mobiliario urbano - nomenclatura de vías': 0,
+  'Otro': 0,
   default: 100,
 };
+
+// Lista estricta de Vías Especiales Metropolitanas para Panel Monumental (Radio 200m)
+export const VIAS_ESPECIALES_KEYWORDS = [
+  'PANAMERICANA SUR',
+  'PANAMERICANA NORTE',
+  'ANTIGUA PANAMERICANA SUR',
+  'CARRETERA CENTRAL',
+  'RAMIRO PRIALE',
+  'AUTOPISTA RAMIRO PRIALE',
+  'AUTOPISTA PRIALE',
+];
+
+/**
+ * Normaliza y verifica si una dirección de texto corresponde a una Vía Especial Metropolitana.
+ */
+export function esViaEspecial(direccion: string | null | undefined): boolean {
+  if (!direccion) return false;
+  // Normalizar: mayúsculas, sin tildes diacríticas
+  const dirNorm = direccion
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  return VIAS_ESPECIALES_KEYWORDS.some((kw) => dirNorm.includes(kw));
+}
+
+/**
+ * Calcula el radio normativo en metros a partir del nombre del Tipo de EPE y la Dirección.
+ * Si es Panel monumental y está en Vía Especial -> 200 metros.
+ * Si es Mobiliario o sin buffer -> 0 metros.
+ */
+export function obtenerRadioNormativo(
+  nombreTipoEpe: string | null | undefined,
+  direccion: string | null | undefined
+): number {
+  if (!nombreTipoEpe) return DISTANCIAS_MINIMAS_EPE.default;
+
+  const tipo = nombreTipoEpe.trim();
+
+  // Caso especial: Panel monumental en Vía Especial
+  if (tipo === 'Panel monumental' || tipo === 'Panel Monumental') {
+    if (esViaEspecial(direccion)) {
+      return 200;
+    }
+    return 150;
+  }
+
+  if (DISTANCIAS_MINIMAS_EPE[tipo] !== undefined) {
+    return DISTANCIAS_MINIMAS_EPE[tipo];
+  }
+
+  return DISTANCIAS_MINIMAS_EPE.default;
+}
 
 // --- Meses cortos para vencimientos ---
 export const MESES_CORTOS = [

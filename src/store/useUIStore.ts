@@ -45,8 +45,8 @@ interface UIStore {
   setCoordenadasCapturadas: (coords: { lat: number; lng: number } | null) => void;
 
   // Punto preview / simulación en mapa para el Sensor de Proximidad
-  puntoSimulacion: { lat: number; lng: number; radio: number } | null;
-  setPuntoSimulacion: (punto: { lat: number; lng: number; radio: number } | null) => void;
+  puntoSimulacion: { lat: number; lng: number; radio: number; enConflicto?: boolean } | null;
+  setPuntoSimulacion: (punto: { lat: number; lng: number; radio: number; enConflicto?: boolean } | null) => void;
 
   // Drawer de Edición / Creación de Paneles (Fase 2)
   drawerPanelAbierto: boolean;

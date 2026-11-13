@@ -124,6 +124,18 @@ PASO 3: Evaluación de Vecinos
 
 ## 8. Estado y Próximos Pasos
 
-* **Documento MD-2:** Generado y archivado físicamente en disco.
+* **Documento MD-2:** Completado y archivado físicamente en disco.
 * **Próximo Documento:** **MD-3: Rediseño Integral de la Base de Datos en Supabase (6 Estados Contractuales, Vías, Espacios Publicitarios y Dimensiones)**.
+
+---
+
+# 🚀 ESTE PLAN YA SE REALIZÓ Y ESTÁ 100% TERMINADO
+
+> **Estado Final:** IMPLEMENTADO, VERIFICADO Y SINCRONIZADO EN PRODUCCIÓN  
+> **Alcance del Algoritmo Espacial Implementado:**
+> 1. Matriz completa de radios oficiales por Tipo de EPE (Paleta: 50m, Unipolar: 100m, Monumental: 150m, Monumental Volumétrico: 150m, Tótem: 75m, Simple: 75m, Mobiliario Urbano: 0m, Otro: 0m).
+> 2. Lector estricto del campo Dirección / Vía que detecta Vías Especiales (Panamericana Norte/Sur, Carretera Central, Ramiro Prialé) elevando automáticamente el radio a 200m para paneles monumentales sin inferencias cartográficas frágiles.
+> 3. Evaluación recíproca con fórmula geodésica de Haversine: se calcula contra el radio mínimo del vecino existente, ignorando elementos de 0m (Mobiliario Urbano).
+> 4. Cambio cromático dinámico del buffer en MapLibre: Verde Teal (#0D9488) cuando la ubicación es apta y Rojo Carmín (#EF4444) en caso de saturación o conflicto normativo.
+> 5. Preparación para sincronización con la base de datos Supabase (columna `radio_default_metros` en el catálogo `tipos_epe`).
 

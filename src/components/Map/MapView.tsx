@@ -504,7 +504,12 @@ export default function MapView() {
           type: 'fill',
           source: SIMULACION_SOURCE_ID,
           paint: {
-            'fill-color': '#06B6D4',
+            'fill-color': [
+              'case',
+              ['boolean', ['get', 'enConflicto'], false],
+              '#EF4444', // Rojo si hay conflicto normativo
+              '#0D9488', // Verde marino/petróleo oficial si es apto
+            ],
             'fill-opacity': 0.22,
           },
           filter: ['==', '$type', 'Polygon'],
@@ -520,7 +525,12 @@ export default function MapView() {
           type: 'line',
           source: SIMULACION_SOURCE_ID,
           paint: {
-            'line-color': '#0891B2',
+            'line-color': [
+              'case',
+              ['boolean', ['get', 'enConflicto'], false],
+              '#DC2626',
+              '#0F766E',
+            ],
             'line-width': 2.5,
             'line-dasharray': [3, 2],
             'line-opacity': 0.9,
@@ -538,7 +548,12 @@ export default function MapView() {
         source: SIMULACION_SOURCE_ID,
         paint: {
           'circle-radius': 9,
-          'circle-color': '#06B6D4',
+          'circle-color': [
+            'case',
+            ['boolean', ['get', 'enConflicto'], false],
+            '#EF4444',
+            '#0D9488',
+          ],
           'circle-stroke-width': 3,
           'circle-stroke-color': '#FFFFFF',
         },
@@ -1064,7 +1079,19 @@ export default function MapView() {
     if (!source) return;
 
     if (puntoSimulacion) {
-      const circleFC = createGeoJSONCircle([puntoSimulacion.lng, puntoSimulacion.lat], puntoSimulacion.radio);
+      const enConflicto = Boolean(puntoSimulacion.enConflicto);
+      const features: GeoJSON.Feature[] = [];
+
+      // Si el radio es mayor a 0, proyectar el polígono circular de exclusión
+      if (puntoSimulacion.radio > 0) {
+        const circleFC = createGeoJSONCircle([puntoSimulacion.lng, puntoSimulacion.lat], puntoSimulacion.radio);
+        circleFC.features.forEach((f) => {
+          f.properties = { ...f.properties, enConflicto };
+          features.push(f);
+        });
+      }
+
+      // Marcador de punto central siempre visible
       const pointFeature: GeoJSON.Feature = {
         type: 'Feature',
         geometry: {
@@ -1073,12 +1100,14 @@ export default function MapView() {
         },
         properties: {
           tipo: 'simulacion',
+          enConflicto,
         },
       };
+      features.push(pointFeature);
 
       source.setData({
         type: 'FeatureCollection',
-        features: [...circleFC.features, pointFeature],
+        features,
       });
     } else {
       source.setData({ type: 'FeatureCollection', features: [] });
