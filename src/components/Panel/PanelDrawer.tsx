@@ -76,20 +76,58 @@ export default function PanelDrawer() {
     }
   }, [isOpen, panelEnEdicion]);
 
-  // Si el usuario capturó un punto en el mapa, actualizar latitud y longitud automáticamente y centrar el mapa
+  // Si el usuario capturó un punto en el mapa, actualizar latitud y longitud automáticamente, centrar el mapa y autocompletar dirección/distrito
   useEffect(() => {
     if (coordenadasCapturadas) {
+      const { lat, lng } = coordenadasCapturadas;
       setFormData((prev) => ({
         ...prev,
-        latitud: coordenadasCapturadas.lat,
-        longitud: coordenadasCapturadas.lng,
+        latitud: lat,
+        longitud: lng,
       }));
       // Centrar automáticamente el mapa en el punto seleccionado con zoom adecuado
-      flyTo([coordenadasCapturadas.lng, coordenadasCapturadas.lat], 17);
+      flyTo([lng, lat], 17);
       setModoCaptura(false);
       setCoordenadasCapturadas(null);
+
+      // Geocodificación Inversa Asistida (MD-5): Deducir vía y distrito automáticamente
+      fetch(`/api/geocode/reverse?lat=${lat}&lon=${lng}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!data) return;
+          setFormData((prev) => {
+            const updates: Partial<typeof prev> = {};
+            // Rellenar dirección si el campo está vacío
+            if (!prev.direccion && data.direccion) {
+              updates.direccion = data.direccion;
+            }
+            // Rellenar distrito si aún no fue seleccionado
+            if (!prev.distritoId && data.distrito && catalogos.distritos.length > 0) {
+              const normSearch = data.distrito
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toUpperCase()
+                .trim();
+              const distMatch = catalogos.distritos.find((d) => {
+                const normD = d.nombre
+                  .normalize('NFD')
+                  .replace(/[\u0300-\u036f]/g, '')
+                  .toUpperCase()
+                  .trim();
+                return normD === normSearch || normSearch.includes(normD) || normD.includes(normSearch);
+              });
+              if (distMatch) {
+                updates.distritoId = distMatch.id;
+              }
+            }
+            return { ...prev, ...updates };
+          });
+        })
+        .catch(() => {
+          // Si Nominatim tarda o no responde, mantener silenciosamente los datos ingresados
+        });
     }
-  }, [coordenadasCapturadas, setModoCaptura, setCoordenadasCapturadas, flyTo]);
+  }, [coordenadasCapturadas, setModoCaptura, setCoordenadasCapturadas, flyTo, catalogos.distritos]);
 
   // Determinar radio normativo según el Tipo de EPE y Dirección (Matriz oficial MML con regla de Vía Especial 200m)
   const nombreTipoEpe = catalogos.tiposEPE.find((t) => t.id === formData.tipoEPEId)?.nombre || '';

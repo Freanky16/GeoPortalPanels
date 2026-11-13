@@ -36,6 +36,7 @@ export default function InstitutionalHeader() {
   const mostrarTodosRadios100m = useUIStore((state) => state.mostrarTodosRadios100m);
   const toggleTodosRadios100m = useUIStore((state) => state.toggleTodosRadios100m);
   const abrirDrawerNuevoPanel = useUIStore((state) => state.abrirDrawerNuevoPanel);
+  const setUbicacionLibre = useUIStore((state) => state.setUbicacionLibre);
 
   const panelesFiltrados = useFilteredPanels();
   const activeFiltersCount = useFilterStore((state) => state.cantidadFiltrosActivos());
@@ -50,6 +51,34 @@ export default function InstitutionalHeader() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Parser de coordenadas libres (MD-5: Estilo Google Earth)
+  const parsedCoord = useMemo(() => {
+    const q = searchQuery.trim();
+    if (!q) return null;
+    // Normalizar comas decimales o separadores
+    const limpio = q.replace(/,/g, ' ');
+    const parts = limpio.split(/\s+/).filter(Boolean);
+    if (parts.length === 2) {
+      const n1 = parseFloat(parts[0]);
+      const n2 = parseFloat(parts[1]);
+      if (!isNaN(n1) && !isNaN(n2)) {
+        let lat = n1;
+        let lng = n2;
+        // Invertir si colocó [lng, lat]
+        if (Math.abs(n1) > 40 && Math.abs(n2) < 40) {
+          lat = n2;
+          lng = n1;
+        }
+        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+          // Evaluar si cae dentro del ámbito metropolitano de Lima
+          const fueraDeLima = lat < -13.5 || lat > -11.0 || lng < -77.8 || lng > -76.0;
+          return { lat, lng, fueraDeLima };
+        }
+      }
+    }
+    return null;
+  }, [searchQuery]);
 
   // Búsqueda predictiva con soporte integral de coordenadas y texto
   const searchResults = useMemo(() => {
@@ -104,7 +133,8 @@ export default function InstitutionalHeader() {
           return partialBoth.slice(0, 7);
         }
 
-        setCoordNotFound(true);
+        // Si es una coordenada válida, no marcamos error rojo sino que permitiremos volar a ella
+        setCoordNotFound(false);
         return [];
       }
     }
@@ -149,6 +179,14 @@ export default function InstitutionalHeader() {
       .slice(0, 7);
   }, [searchQuery, paneles]);
 
+
+  const handleVolarACoordenada = (lat: number, lng: number, fueraDeLima?: boolean) => {
+    flyTo([lng, lat], 17);
+    setUbicacionLibre({ lat, lng, fueraDeLima });
+    setShowSuggestions(false);
+    setSearchQuery('');
+    setMobileSearchOpen(false);
+  };
 
   const handleSelectPanel = (panel: Panel) => {
     seleccionarPanel(panel);
@@ -294,7 +332,9 @@ export default function InstitutionalHeader() {
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
-                if (searchResults.length > 0) {
+                if (parsedCoord) {
+                  handleVolarACoordenada(parsedCoord.lat, parsedCoord.lng, parsedCoord.fueraDeLima);
+                } else if (searchResults.length > 0) {
                   handleSelectPanel(searchResults[0]);
                 }
               } else if (e.key === 'Escape') {
@@ -323,30 +363,56 @@ export default function InstitutionalHeader() {
 
         {/* Sugerencias en tiempo real */}
         {showSuggestions && (
-          <>
+          <div className={styles.suggestionsBox}>
+            {/* Opción de vuelo libre si se detectaron coordenadas (MD-5) */}
+            {parsedCoord && (
+              <button
+                className={styles.suggestionItem}
+                onClick={() => handleVolarACoordenada(parsedCoord.lat, parsedCoord.lng, parsedCoord.fueraDeLima)}
+                style={{ background: '#F0FDFA', borderBottom: '1px solid #CCFBF1' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ color: '#0D9488', display: 'flex' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </span>
+                  <div>
+                    <span className={styles.suggestionCode} style={{ color: '#0F766E' }}>
+                      Ir a [{parsedCoord.lat.toFixed(5)}, {parsedCoord.lng.toFixed(5)}]
+                    </span>
+                    <span style={{ margin: '0 6px', color: '#64748B' }}>·</span>
+                    <span style={{ fontSize: '11px', color: parsedCoord.fueraDeLima ? '#D97706' : '#0D9488', fontWeight: 600 }}>
+                      {parsedCoord.fueraDeLima ? 'Fuera de Lima Metropolitana' : 'Volar a coordenadas libres'}
+                    </span>
+                  </div>
+                </div>
+                <span className={styles.suggestionDetail} style={{ color: '#0D9488', fontWeight: 600 }}>Volar ↗</span>
+              </button>
+            )}
+
             {searchResults.length > 0 ? (
-              <div className={styles.suggestionsBox}>
-                {searchResults.map((panel) => (
-                  <button
-                    key={panel.id}
-                    className={styles.suggestionItem}
-                    onClick={() => handleSelectPanel(panel)}
-                  >
-                    <div>
-                      <span className={styles.suggestionCode}>{panel.codigo}</span>
-                      <span style={{ margin: '0 6px', color: '#64748B' }}>·</span>
-                      <span>{panel.empresa || 'Sin empresa'}</span>
-                    </div>
-                    <span className={styles.suggestionDetail}>{panel.distrito}</span>
-                  </button>
-                ))}
-              </div>
-            ) : coordNotFound ? (
-              <div style={{ padding: '8px 12px', color: '#d32f2f', fontSize: '0.9rem', textAlign: 'center' }}>
-                No se encontró paneles publicitarios en esta ubicación
+              searchResults.map((panel) => (
+                <button
+                  key={panel.id}
+                  className={styles.suggestionItem}
+                  onClick={() => handleSelectPanel(panel)}
+                >
+                  <div>
+                    <span className={styles.suggestionCode}>{panel.codigo}</span>
+                    <span style={{ margin: '0 6px', color: '#64748B' }}>·</span>
+                    <span>{panel.empresa || 'Sin empresa'}</span>
+                  </div>
+                  <span className={styles.suggestionDetail}>{panel.distrito}</span>
+                </button>
+              ))
+            ) : coordNotFound && !parsedCoord ? (
+              <div style={{ padding: '8px 12px', color: '#64748B', fontSize: '0.85rem', textAlign: 'center' }}>
+                No se encontraron paneles con este criterio
               </div>
             ) : null}
-          </>
+          </div>
         )}
       </div>
 

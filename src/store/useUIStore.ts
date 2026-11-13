@@ -12,6 +12,13 @@ export interface CorredorVialActivo {
   bounds: [[number, number], [number, number]]; // [[minLng, minLat], [maxLng, maxLat]]
 }
 
+export interface UbicacionLibre {
+  lat: number;
+  lng: number;
+  direccion?: string | null;
+  fueraDeLima?: boolean;
+}
+
 interface UIStore {
   // Paneles laterales
   filtrosPanelAbierto: boolean;
@@ -47,6 +54,10 @@ interface UIStore {
   // Punto preview / simulación en mapa para el Sensor de Proximidad
   puntoSimulacion: { lat: number; lng: number; radio: number; enConflicto?: boolean } | null;
   setPuntoSimulacion: (punto: { lat: number; lng: number; radio: number; enConflicto?: boolean } | null) => void;
+
+  // Búsqueda libre de coordenadas (MD-5 Estilo Google Earth)
+  ubicacionLibre: UbicacionLibre | null;
+  setUbicacionLibre: (ubicacion: UbicacionLibre | null) => void;
 
   // Drawer de Edición / Creación de Paneles (Fase 2)
   drawerPanelAbierto: boolean;
@@ -85,12 +96,14 @@ export const useUIStore = create<UIStore>((set) => ({
   modoCapturaCoordenadas: false,
   coordenadasCapturadas: null,
   puntoSimulacion: null,
+  ubicacionLibre: null,
   drawerPanelAbierto: false,
   panelEnEdicion: null,
 
   setModoCapturaCoordenadas: (val) => set({ modoCapturaCoordenadas: val }),
   setCoordenadasCapturadas: (coords) => set({ coordenadasCapturadas: coords }),
   setPuntoSimulacion: (punto) => set({ puntoSimulacion: punto }),
+  setUbicacionLibre: (ubicacion) => set({ ubicacionLibre: ubicacion }),
 
   abrirDrawerNuevoPanel: () => set({ drawerPanelAbierto: true, panelEnEdicion: null }),
   abrirDrawerEditarPanel: (panel) => set({ drawerPanelAbierto: true, panelEnEdicion: panel }),

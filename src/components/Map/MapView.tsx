@@ -179,6 +179,9 @@ export default function MapView() {
   const modoCapturaCoordenadas = useUIStore((state) => state.modoCapturaCoordenadas);
   const setCoordenadasCapturadas = useUIStore((state) => state.setCoordenadasCapturadas);
   const puntoSimulacion = useUIStore((state) => state.puntoSimulacion);
+  const ubicacionLibre = useUIStore((state) => state.ubicacionLibre);
+  const setUbicacionLibre = useUIStore((state) => state.setUbicacionLibre);
+  const abrirDrawerNuevoPanel = useUIStore((state) => state.abrirDrawerNuevoPanel);
 
   // Hook que retorna los paneles filtrados en tiempo real
   const panelesFiltrados = useFilteredPanels();
@@ -205,6 +208,9 @@ export default function MapView() {
 
   // Ref para el faro / luz pulsante (Beacon Pulse) del panel seleccionado
   const beaconMarkerRef = useRef<maplibregl.Marker | null>(null);
+
+  // Ref para el marcador de ubicación libre / búsqueda por coordenadas (MD-5)
+  const ubicacionLibreMarkerRef = useRef<maplibregl.Marker | null>(null);
 
   /**
    * Agrega la fuente GeoJSON y las capas de visualización al mapa.
@@ -1114,9 +1120,100 @@ export default function MapView() {
     }
   }, [puntoSimulacion, mapReady]);
 
+  // 6.8. Marcador temporal de Ubicación Libre / Búsqueda por Coordenadas (MD-5)
+  useEffect(() => {
+    if (!mapReady || !map.current) return;
+
+    if (ubicacionLibreMarkerRef.current) {
+      ubicacionLibreMarkerRef.current.remove();
+      ubicacionLibreMarkerRef.current = null;
+    }
+
+    if (!ubicacionLibre) return;
+
+    // Crear pin estilizado en el DOM con estilo Teal institucional
+    const el = document.createElement('div');
+    el.className = 'ubicacion-libre-marker';
+    el.innerHTML = `
+      <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; transform: translate(-50%, -100%); cursor: pointer;">
+        <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(13, 148, 136, 0.28); animation: beaconRipple 1.4s ease-out infinite;"></div>
+        <div style="position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #0D9488; border: 2.5px solid #FFFFFF; box-shadow: 0 2px 10px rgba(0,0,0,0.35);"></div>
+      </div>
+    `;
+
+    const marker = new maplibregl.Marker({
+      element: el,
+      anchor: 'bottom',
+    })
+      .setLngLat([ubicacionLibre.lng, ubicacionLibre.lat])
+      .addTo(map.current);
+
+    ubicacionLibreMarkerRef.current = marker;
+
+    return () => {
+      marker.remove();
+      if (ubicacionLibreMarkerRef.current === marker) {
+        ubicacionLibreMarkerRef.current = null;
+      }
+    };
+  }, [ubicacionLibre, mapReady]);
+
   return (
     <div className={styles.mapWrapper}>
       <div ref={mapContainer} className={styles.mapContainer} />
+
+      {/* Tarjeta flotante no invasiva para Búsqueda Libre de Coordenadas (MD-5) */}
+      {ubicacionLibre && (
+        <div className={styles.ubicacionLibreCard}>
+          <div className={styles.ubicacionLibreHeader}>
+            <div className={styles.ubicacionLibreIcon}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            </div>
+            <div className={styles.ubicacionLibreInfo}>
+              <div className={styles.ubicacionLibreCoords}>
+                {ubicacionLibre.lat.toFixed(5)}, {ubicacionLibre.lng.toFixed(5)}
+              </div>
+              <div className={styles.ubicacionLibreSub}>
+                {ubicacionLibre.fueraDeLima ? (
+                  <span style={{ color: '#D97706', fontWeight: 600 }}>
+                    Ubicación fuera del ámbito de Lima Metropolitana
+                  </span>
+                ) : (
+                  'Sin paneles registrados en este punto'
+                )}
+              </div>
+            </div>
+            <button
+              className={styles.ubicacionLibreCloseBtn}
+              onClick={() => setUbicacionLibre(null)}
+              title="Cerrar marcador"
+              aria-label="Cerrar marcador"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className={styles.ubicacionLibreActions}>
+            <button
+              className={styles.ubicacionLibreActionBtn}
+              onClick={() => {
+                abrirDrawerNuevoPanel();
+                setCoordenadasCapturadas({ lat: ubicacionLibre.lat, lng: ubicacionLibre.lng });
+                setUbicacionLibre(null);
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Registrar panel aquí
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
