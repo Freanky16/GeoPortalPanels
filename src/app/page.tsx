@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import InstitutionalHeader from '@/components/Header/InstitutionalHeader';
 import FilterPanel from '@/components/Filters/FilterPanel';
 import PanelCard from '@/components/Panel/PanelCard';
+import PanelDrawer from '@/components/Panel/PanelDrawer';
 import DashboardPanel from '@/components/Dashboard/DashboardPanel';
 import MapSwitcher from '@/components/Map/MapSwitcher';
 import MapControls from '@/components/Map/MapControls';
@@ -83,6 +84,9 @@ export default function Home() {
 
       {/* 6. Ficha Técnica del Panel Seleccionado */}
       <PanelCard />
+
+      {/* 6.1 Drawer Deslizante de Registro y Edición de Paneles (Fase 2) */}
+      <PanelDrawer />
 
       {/* 7. Panel Analítico Territorial (Métricas Estratégicas MML) */}
       <DashboardPanel />

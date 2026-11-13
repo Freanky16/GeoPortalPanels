@@ -35,6 +35,7 @@ export default function InstitutionalHeader() {
   const flyTo = useUIStore((state) => state.flyTo);
   const mostrarTodosRadios100m = useUIStore((state) => state.mostrarTodosRadios100m);
   const toggleTodosRadios100m = useUIStore((state) => state.toggleTodosRadios100m);
+  const abrirDrawerNuevoPanel = useUIStore((state) => state.abrirDrawerNuevoPanel);
 
   const panelesFiltrados = useFilteredPanels();
   const activeFiltersCount = useFilterStore((state) => state.cantidadFiltrosActivos());
@@ -433,18 +434,38 @@ export default function InstitutionalHeader() {
 
         {/* Botón Acceso Técnico (Doble Llave Institucional) */}
         {esGestor ? (
-          <button
-            className={`${styles.headerBtn} ${styles.tecnicoActivoBtn}`}
-            onClick={() => setEsGestor(false)}
-            title="Sesión Técnica Activa · Clic para salir"
-          >
-            <span className={styles.pulseDotTecnico} />
-            <span className={styles.btnLabel}>Modo Técnico</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          <>
+            <button
+              className={styles.headerBtn}
+              onClick={abrirDrawerNuevoPanel}
+              style={{
+                background: '#1E8E3E',
+                borderColor: '#1E8E3E',
+                color: '#FFFFFF',
+                fontWeight: 700,
+              }}
+              title="Registrar un nuevo panel publicitario"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span className={styles.btnLabel}>+ Nuevo Panel</span>
+            </button>
+
+            <button
+              className={`${styles.headerBtn} ${styles.tecnicoActivoBtn}`}
+              onClick={() => setEsGestor(false)}
+              title="Sesión Técnica Activa · Clic para salir"
+            >
+              <span className={styles.pulseDotTecnico} />
+              <span className={styles.btnLabel}>Modo Técnico</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </>
         ) : (
           <button
             className={styles.headerBtn}

@@ -38,6 +38,19 @@ interface UIStore {
   toggleLeyenda: () => void;
   setLeyendaAbierta: (val: boolean) => void;
 
+  // Modo captura en mapa (mira geodésica)
+  modoCapturaCoordenadas: boolean;
+  setModoCapturaCoordenadas: (val: boolean) => void;
+  coordenadasCapturadas: { lat: number; lng: number } | null;
+  setCoordenadasCapturadas: (coords: { lat: number; lng: number } | null) => void;
+
+  // Drawer de Edición / Creación de Paneles (Fase 2)
+  drawerPanelAbierto: boolean;
+  panelEnEdicion: Panel | null; // null = Nuevo panel; Panel = Editar panel existente
+  abrirDrawerNuevoPanel: () => void;
+  abrirDrawerEditarPanel: (panel: Panel) => void;
+  cerrarDrawerPanel: () => void;
+
   // Acciones
   toggleFiltrosPanel: () => void;
   setFiltrosPanelAbierto: (abierto: boolean) => void;
@@ -65,6 +78,17 @@ export const useUIStore = create<UIStore>((set) => ({
   mostrarRadio100m: false,
   mostrarTodosRadios100m: false,
   leyendaAbierta: false,
+  modoCapturaCoordenadas: false,
+  coordenadasCapturadas: null,
+  drawerPanelAbierto: false,
+  panelEnEdicion: null,
+
+  setModoCapturaCoordenadas: (val) => set({ modoCapturaCoordenadas: val }),
+  setCoordenadasCapturadas: (coords) => set({ coordenadasCapturadas: coords }),
+
+  abrirDrawerNuevoPanel: () => set({ drawerPanelAbierto: true, panelEnEdicion: null }),
+  abrirDrawerEditarPanel: (panel) => set({ drawerPanelAbierto: true, panelEnEdicion: panel }),
+  cerrarDrawerPanel: () => set({ drawerPanelAbierto: false, panelEnEdicion: null, modoCapturaCoordenadas: false }),
 
   setCorredorActivo: (corredor) => set({ corredorActivo: corredor }),
   limpiarCorredorActivo: () => set({ corredorActivo: null }),

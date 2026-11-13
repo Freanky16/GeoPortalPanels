@@ -155,13 +155,13 @@ export const usePanelStore = create<PanelStore>((set) => ({
         }
       });
 
-      set({ 
+      set((state) => ({ 
         paneles: panelesData,
         catalogos,
         isLoading: false,
         error: null,
-        esGestor: esGestorActivo,
-      });
+        esGestor: state.esGestor || esGestorActivo,
+      }));
 
     } catch (err: unknown) {
       const errorMsg = (err as Error)?.message || (typeof err === 'object' ? JSON.stringify(err) : String(err));

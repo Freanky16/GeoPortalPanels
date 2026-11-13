@@ -170,6 +170,8 @@ export default function MapView() {
   const panelSeleccionado = usePanelStore((state) => state.panelSeleccionado);
   const seleccionarPanel = usePanelStore((state) => state.seleccionarPanel);
   const corredorActivo = useUIStore((state) => state.corredorActivo);
+  const modoCapturaCoordenadas = useUIStore((state) => state.modoCapturaCoordenadas);
+  const setCoordenadasCapturadas = useUIStore((state) => state.setCoordenadasCapturadas);
 
   // Hook que retorna los paneles filtrados en tiempo real
   const panelesFiltrados = useFilteredPanels();
@@ -190,6 +192,9 @@ export default function MapView() {
 
   const panelSeleccionadoRef = useRef(panelSeleccionado);
   panelSeleccionadoRef.current = panelSeleccionado;
+
+  const modoCapturaRef = useRef(modoCapturaCoordenadas);
+  modoCapturaRef.current = modoCapturaCoordenadas;
 
   // Ref para el faro / luz pulsante (Beacon Pulse) del panel seleccionado
   const beaconMarkerRef = useRef<maplibregl.Marker | null>(null);
@@ -493,7 +498,16 @@ export default function MapView() {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mapInstance.on('click', (e: any) => {
+      if (modoCapturaRef.current) {
+        setCoordenadasCapturadas({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+        return;
+      }
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mapInstance.on('click', PANELES_POINT_LAYER, (e: any) => {
+      if (modoCapturaRef.current) return;
       if (!e.features || e.features.length === 0) return;
       const properties = e.features[0].properties;
       if (!properties?.panelData) return;
@@ -508,6 +522,10 @@ export default function MapView() {
     // Hover con Tooltip informativo inmediato
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mapInstance.on('mouseenter', PANELES_POINT_LAYER, (e: any) => {
+      if (modoCapturaRef.current) {
+        mapInstance.getCanvas().style.cursor = 'crosshair';
+        return;
+      }
       mapInstance.getCanvas().style.cursor = 'pointer';
       if (!e.features || e.features.length === 0) return;
 
@@ -554,10 +572,16 @@ export default function MapView() {
     });
 
     mapInstance.on('mouseleave', PANELES_POINT_LAYER, () => {
-      mapInstance.getCanvas().style.cursor = '';
+      mapInstance.getCanvas().style.cursor = modoCapturaRef.current ? 'crosshair' : '';
       hoverPopup.current?.remove();
     });
   }, [seleccionarPanel]);
+
+  // Cursor cruzado cuando el modo captura está activado
+  useEffect(() => {
+    if (!map.current) return;
+    map.current.getCanvas().style.cursor = modoCapturaCoordenadas ? 'crosshair' : '';
+  }, [modoCapturaCoordenadas]);
 
   // 1. Inicializar el mapa
   useEffect(() => {

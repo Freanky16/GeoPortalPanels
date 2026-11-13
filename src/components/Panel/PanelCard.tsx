@@ -12,9 +12,11 @@ export default function PanelCard() {
   const panel = usePanelStore((state) => state.panelSeleccionado);
   const isOpen = usePanelStore((state) => state.mostrarDetalle);
   const cerrarDetalle = usePanelStore((state) => state.cerrarDetalle);
+  const esGestor = usePanelStore((state) => state.esGestor);
   const flyTo = useUIStore((state) => state.flyTo);
   const mostrarRadio100m = useUIStore((state) => state.mostrarRadio100m);
   const toggleRadio100m = useUIStore((state) => state.toggleRadio100m);
+  const abrirDrawerEditarPanel = useUIStore((state) => state.abrirDrawerEditarPanel);
 
   if (!isOpen || !panel) return null;
 
@@ -29,12 +31,39 @@ export default function PanelCard() {
           <span className={styles.codigo}>{panel.codigo}</span>
           <span className={styles.frap}>FRAP: {mostrarDato(panel.registroFRAP)}</span>
         </div>
-        <button className={styles.closeButton} onClick={cerrarDetalle} aria-label="Cerrar ficha">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {esGestor && (
+            <button
+              onClick={() => abrirDrawerEditarPanel(panel)}
+              style={{
+                background: 'rgba(26, 115, 232, 0.1)',
+                border: '1px solid #1A73E8',
+                color: '#1A73E8',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                fontSize: '11px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                cursor: 'pointer',
+              }}
+              title="Editar especificaciones de este panel"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              <span>Editar</span>
+            </button>
+          )}
+          <button className={styles.closeButton} onClick={cerrarDetalle} aria-label="Cerrar ficha">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div className={styles.content}>

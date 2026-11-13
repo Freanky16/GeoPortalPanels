@@ -99,6 +99,7 @@ export interface Panel {
   fechaSuscripcion: string | null;
   fechaVencimiento: string | null;
   estadoContrato: EstadoContrato;
+  notas?: string | null;
 }
 
 // --- Filtros ---
