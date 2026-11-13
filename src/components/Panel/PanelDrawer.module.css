@@ -3,16 +3,14 @@
 .drawerBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none; /* Permite que el mapa debajo reciba scroll de zoom y arrastre */
   z-index: 1000;
   display: flex;
   justify-content: flex-end;
   animation: fadeIn 0.25s ease-out forwards;
 }
 
-/* Cuando se activa el modo 'Marcar en Mapa', el backdrop se vuelve transparente e interactuable con el mapa */
+/* Cuando se activa el modo 'Marcar en Mapa', el backdrop se mantiene transparente */
 .drawerBackdropPicking {
   background: transparent !important;
   backdrop-filter: none !important;

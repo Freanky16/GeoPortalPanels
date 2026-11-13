@@ -76,7 +76,7 @@ export default function PanelDrawer() {
     }
   }, [isOpen, panelEnEdicion]);
 
-  // Si el usuario capturó un punto en el mapa, actualizar latitud y longitud automáticamente
+  // Si el usuario capturó un punto en el mapa, actualizar latitud y longitud automáticamente y centrar el mapa
   useEffect(() => {
     if (coordenadasCapturadas) {
       setFormData((prev) => ({
@@ -84,10 +84,12 @@ export default function PanelDrawer() {
         latitud: coordenadasCapturadas.lat,
         longitud: coordenadasCapturadas.lng,
       }));
+      // Centrar automáticamente el mapa en el punto seleccionado con zoom adecuado
+      flyTo([coordenadasCapturadas.lng, coordenadasCapturadas.lat], 17);
       setModoCaptura(false);
       setCoordenadasCapturadas(null);
     }
-  }, [coordenadasCapturadas, setModoCaptura, setCoordenadasCapturadas]);
+  }, [coordenadasCapturadas, setModoCaptura, setCoordenadasCapturadas, flyTo]);
 
   // Determinar radio normativo según el Tipo de EPE seleccionado (Arquitectura abierta y escalable)
   const nombreTipoEpe = catalogos.tiposEPE.find((t) => t.id === formData.tipoEPEId)?.nombre || '';
@@ -224,9 +226,6 @@ export default function PanelDrawer() {
   return (
     <div
       className={`${styles.drawerBackdrop} ${modoCaptura ? styles.drawerBackdropPicking : ''}`}
-      onClick={() => {
-        if (!modoCaptura) cerrarDrawer();
-      }}
     >
       <aside className={styles.drawerContainer} onClick={(e) => e.stopPropagation()}>
         {/* Cabecera del Drawer */}

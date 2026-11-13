@@ -113,3 +113,12 @@ Este documento consolida y especifica las correcciones de diseño visual, interf
 * **Documento MD-1:** Completado y archivado en disco local.
 * **Próximo paso:** Pasar a la revisión y preguntas para el **Documento MD-2: Matriz de Distanciamiento Normativo y Sensores por Tipo de Publicidad**.
 
+---
+
+# 🚀 ESTE PLAN YA SE REALIZÓ Y ESTÁ 100% TERMINADO
+
+> **Estado Final:** IMPLEMENTADO, VERIFICADO Y SINCRONIZADO EN PRODUCCIÓN  
+> **Ajustes Adicionales de Cierre:**
+> 1. Se liberó la interacción cartográfica mientras el Drawer lateral está abierto (el mapa ya no se bloquea; permite hacer zoom con rueda y desplazamiento libre a un costado).
+> 2. Centrado y vuelo automático (`flyTo`) con zoom 17 al seleccionar una coordenada en el mapa mediante "Marcar en Mapa".
+
