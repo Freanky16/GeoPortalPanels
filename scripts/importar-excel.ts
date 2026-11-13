@@ -33,6 +33,11 @@ dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 const ARGS = process.argv.slice(2);
 const DRY_RUN = ARGS.includes('--dry-run');
 const FILE_FLAG = ARGS.find(a => a.startsWith('--file='));
+const MAX_FILAS_FLAG = ARGS.find(a => a.startsWith('--max-filas='));
+
+// Por instrucción estricta del usuario: procesar únicamente hasta la fila 822 del Excel
+// (exactamente 821 paneles con contrato oficial, culminando en el panel "301 _SELEC")
+const FILA_LIMITE_EXCEL = MAX_FILAS_FLAG ? parseInt(MAX_FILAS_FLAG.split('=')[1], 10) : 822;
 
 let EXCEL_FILE = 'PlantillaEstandarBD.xlsx';
 if (FILE_FLAG) {
@@ -120,15 +125,39 @@ function parsearNumero(valor: any): number | null {
 
 function parsearCoordenada(valor: any): number | null {
   if (valor == null || valor === '') return null;
-  if (typeof valor === 'number') return isNaN(valor) ? null : valor;
+  if (typeof valor === 'number') {
+    if (isNaN(valor)) return null;
+    // Si viene como entero grande por omisión de punto decimal en Excel (ej. -1209197)
+    if (valor < -10000 && valor > -15000000000) {
+      const s = String(valor);
+      const dec = s.slice(0, 3) + '.' + s.slice(3);
+      return parseFloat(dec);
+    }
+    return valor;
+  }
 
-  const limpio = String(valor)
+  let limpio = String(valor)
     .replace(/,/g, '.')
-    .replace(/\s/g, '')
     .trim();
 
-  const num = parseFloat(limpio);
-  return isNaN(num) ? null : num;
+  // Si tiene espacio entre la parte entera y la decimal (ej: "-12 20019342")
+  if (/^-\d{1,2}\s+\d+$/.test(limpio)) {
+    limpio = limpio.replace(/\s+/, '.');
+  } else {
+    limpio = limpio.replace(/\s/g, '');
+  }
+
+  let num = parseFloat(limpio);
+  if (isNaN(num)) return null;
+
+  // Si viene como entero grande tipo -1209197
+  if (num < -10000 && num > -15000000000) {
+    const s = String(num);
+    const dec = s.slice(0, 3) + '.' + s.slice(3);
+    num = parseFloat(dec);
+  }
+
+  return num;
 }
 
 /**
@@ -219,10 +248,17 @@ async function importarExcel(): Promise<void> {
   const sheet = workbook.Sheets[sheetName];
   const rows: Record<string, any>[] = xlsx.utils.sheet_to_json(sheet, { defval: null });
 
-  console.log(`   Hoja seleccionada: "${sheetName}" con ${rows.length} filas detectadas.`);
+  console.log(`   Hoja seleccionada: "${sheetName}" con ${rows.length} filas detectadas en el archivo.`);
 
-  if (rows.length === 0) {
-    console.log('❌ El archivo no contiene filas con datos.');
+  let filasProcesadas = rows;
+  if (FILA_LIMITE_EXCEL && FILA_LIMITE_EXCEL > 1 && rows.length > (FILA_LIMITE_EXCEL - 1)) {
+    filasProcesadas = rows.slice(0, FILA_LIMITE_EXCEL - 1);
+    console.log(`   🛡️  Límite estricto de seguridad activado: procesando exactamente hasta la fila ${FILA_LIMITE_EXCEL} del Excel.`);
+    console.log(`   📊 Registros seleccionados: ${filasProcesadas.length} paneles (último panel: "${filasProcesadas[filasProcesadas.length - 1]['CODIGO'] || filasProcesadas[filasProcesadas.length - 1]['Codigo']}").`);
+  }
+
+  if (filasProcesadas.length === 0) {
+    console.log('❌ El archivo no contiene filas con datos para procesar.');
     return;
   }
 
@@ -277,41 +313,66 @@ async function importarExcel(): Promise<void> {
   const empresasNuevasPorCrear = new Map<string, string>(); // normalizado -> nombre original
   const contratosUnicos = new Map<string, any>();
   const errores: any[] = [];
+  const codigosVistos = new Map<string, number>();
 
-  for (let idx = 0; idx < rows.length; idx++) {
-    const r = rows[idx];
+  for (let idx = 0; idx < filasProcesadas.length; idx++) {
+    const r = filasProcesadas[idx];
     const numFila = idx + 2; // Fila Excel 1-based (fila 1 = encabezados)
 
     // A. Código
     const rawCodigo = leerColumna(r, 'CODIGO', 'CÓDIGO', 'COD', 'NAME', 'ID');
-    const codigo = rawCodigo ? String(rawCodigo).trim().toUpperCase() : '';
+    let codigo = rawCodigo ? String(rawCodigo).trim().toUpperCase() : '';
 
     if (!codigo) {
       errores.push({ fila: numFila, campo: 'CODIGO', mensaje: 'Código vacío o ausente' });
       continue;
     }
 
+    // Si el código viene duplicado en el Excel, sufijar (-2, -3) para respetar ambos paneles y evitar conflictos en BD
+    const conteo = (codigosVistos.get(codigo) || 0) + 1;
+    codigosVistos.set(codigo, conteo);
+    if (conteo > 1) {
+      codigo = `${codigo}-${conteo}`;
+    }
+
     // B. Coordenadas
     const rawLat = leerColumna(r, 'LATITUD', 'LAT', 'Y');
     const rawLon = leerColumna(r, 'LONGITUD', 'LON', 'LNG', 'X');
-    const lat = parsearCoordenada(rawLat);
-    const lon = parsearCoordenada(rawLon);
+    let lat = parsearCoordenada(rawLat);
+    let lon = parsearCoordenada(rawLon);
 
     if (lat == null || lon == null) {
       errores.push({ fila: numFila, campo: 'COORDENADAS', mensaje: `Coordenadas inválidas: lat="${rawLat}", lon="${rawLon}"` });
       continue;
     }
 
+    // Corrección inteligente de cuadrante e inversión para Lima Metropolitana (Lat ~ -11 a -13, Lon ~ -76 a -78)
+    // Caso 1: Latitud y Longitud invertidas en las columnas (lat < -50 y lon entre -30 y 30)
+    if (lat < -50 && Math.abs(lon) < 30) {
+      const temp = lat;
+      lat = lon < 0 ? lon : -lon;
+      lon = temp;
+    }
+    // Caso 2: Coordenadas sin signo negativo (hemisferio sur / oeste)
+    if (lat > 0 && lat >= 10 && lat <= 15) lat = -lat;
+    if (lon > 0 && lon >= 75 && lon <= 80) lon = -lon;
+
     // C. Distrito
     const rawDistrito = leerColumna(r, 'DISTRITO', 'DIST');
     let distritoId = buscarEnMapa(mapDistritos, rawDistrito);
 
-    // Variaciones comunes
+    // Variaciones comunes y sinónimos de distritos en Lima Metropolitana
     if (!distritoId && rawDistrito) {
       const normD = normalizar(rawDistrito);
       if (normD === 'ATE VITARTE') distritoId = buscarEnMapa(mapDistritos, 'ATE');
       else if (normD === 'MAGDALENA') distritoId = buscarEnMapa(mapDistritos, 'MAGDALENA DEL MAR');
-      else if (normD === 'SANTA MARIA') distritoId = buscarEnMapa(mapDistritos, 'SANTA MARIA DEL MAR');
+      else if (normD === 'SANTA MARIA' || normD.includes('SANTA MARIA DEL MAR')) distritoId = buscarEnMapa(mapDistritos, 'SANTA MARIA DEL MAR');
+      else if (normD.includes('SAN BARTOLO')) distritoId = buscarEnMapa(mapDistritos, 'SAN BARTOLO');
+      else if (normD === 'SURCO') distritoId = buscarEnMapa(mapDistritos, 'SANTIAGO DE SURCO');
+      else if (normD === 'VILLA MARIA DE TRIUNFO') distritoId = buscarEnMapa(mapDistritos, 'VILLA MARIA DEL TRIUNFO');
+      else if (normD.includes('MIRAFLORES')) distritoId = buscarEnMapa(mapDistritos, 'MIRAFLORES');
+      else if (normD === 'CHILCA') distritoId = buscarEnMapa(mapDistritos, 'PUCUSANA');
+      else if (normD.includes('CHOSICA') || normD.includes('LURIGANCHO')) distritoId = buscarEnMapa(mapDistritos, 'LURIGANCHO-CHOSICA');
     }
 
     if (!distritoId) {
@@ -334,7 +395,15 @@ async function importarExcel(): Promise<void> {
 
     // E. Estado Contractual
     const rawEstado = leerColumna(r, 'ESTADO CONTRACTUAL', 'ESTADO_CONTRACTUAL', 'ESTADO', 'SITUACION LEGAL');
-    const estadoContratoId = buscarEnMapa(mapEstadosContrato, rawEstado);
+    let estadoContratoId = buscarEnMapa(mapEstadosContrato, rawEstado);
+    if (!estadoContratoId && rawEstado) {
+      const normEst = normalizar(rawEstado);
+      if (normEst === 'REORDENAMIENTO' || (normEst.includes('REORDENAMIENTO') && !normEst.includes('NO') && !normEst.includes('SIN'))) {
+        estadoContratoId = buscarEnMapa(mapEstadosContrato, 'Contrato de reordenamiento');
+      } else if (normEst.includes('NO TERMINO') || normEst.includes('SIN CONTRATO')) {
+        estadoContratoId = buscarEnMapa(mapEstadosContrato, 'NO TERMINO REORDENAMIENTO') || buscarEnMapa(mapEstadosContrato, 'Sin contrato de reordenamiento');
+      }
+    }
 
     // F. Tipos y clasificaciones
     const rawTipoVia = leerColumna(r, 'TIPO DE VIA', 'TIPO_DE_VIA', 'TIPO VIA', 'JERARQUIA VIAL');
@@ -347,10 +416,19 @@ async function importarExcel(): Promise<void> {
     const tipoEpeId = buscarEnMapa(mapTiposEpe, rawTipoEpe);
 
     const rawCaract = leerColumna(r, 'CARACTERISTICAS TECNICAS', 'CARACTERISTICAS TÉCNICAS', 'ILUMINACION');
-    const caracteristicaId = buscarEnMapa(mapCaracts, rawCaract);
+    let caracteristicaId = buscarEnMapa(mapCaracts, rawCaract);
+    if (!caracteristicaId && rawCaract) {
+      const normCar = normalizar(rawCaract);
+      if (normCar.includes('LONA')) caracteristicaId = buscarEnMapa(mapCaracts, 'BANNER') || buscarEnMapa(mapCaracts, 'Sencillo');
+      else if (normCar.includes('VINIL')) caracteristicaId = buscarEnMapa(mapCaracts, 'Sencillo') || buscarEnMapa(mapCaracts, 'OTRO');
+    }
 
     const rawMaterial = leerColumna(r, 'MATERIAL PREDOMINANTE', 'MATERIAL_PREDOMINANTE', 'MATERIAL');
-    const materialId = buscarEnMapa(mapMateriales, rawMaterial);
+    let materialId = buscarEnMapa(mapMateriales, rawMaterial);
+    if (!materialId && rawMaterial) {
+      const normMat = normalizar(rawMaterial);
+      if (normMat.includes('BANNER/LED') || normMat.includes('/')) materialId = buscarEnMapa(mapMateriales, 'Mixto');
+    }
 
     // G. Dirección
     const direccion = leerColumna(r, 'DIRECCION', 'DIRECCIÓN', 'UBICACION') || null;
@@ -396,7 +474,7 @@ async function importarExcel(): Promise<void> {
     });
   }
 
-  console.log(`   Filas analizadas:  ${rows.length}`);
+  console.log(`   Filas analizadas:  ${filasProcesadas.length}`);
   console.log(`   Paneles válidos:   ${panelesValidos.length}`);
   console.log(`   Filas rechazadas:  ${errores.length}`);
   if (errores.length > 0) {
@@ -537,7 +615,7 @@ async function importarExcel(): Promise<void> {
   console.log('\n' + '═'.repeat(66));
   console.log('  🎉 IMPORTACIÓN FINALIZADA');
   console.log('═'.repeat(66));
-  console.log(`  📊 Total filas analizadas: ${rows.length}`);
+  console.log(`  📊 Total filas analizadas: ${filasProcesadas.length}`);
   console.log(`  ✅ Paneles guardados en BD: ${subidos}`);
   console.log(`  ❌ Paneles con error:      ${fallidos}`);
   console.log(`  🏢 Empresas nuevas creadas: ${empresasNuevasPorCrear.size}`);

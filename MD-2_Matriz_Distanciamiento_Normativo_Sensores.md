@@ -224,3 +224,14 @@ Central", "Ramiro Prialé"?                           • Unipolar: 100m
 3. **Agregar columna `es_via_especial` (BOOLEAN) o evaluarla al vuelo en la vista SQL** usando `ILIKE` sobre el campo `direccion`, para consultas desde el backend.
 4. **Auditoría de los datos actuales:** Validar que los 400 paneles existentes tengan correctamente asignados sus `tipo_epe_id` y su `direccion` para que el sensor funcione con datos reales al 100%.
 
+---
+
+# 🚀 ESTE PLAN YA SE REALIZÓ Y ESTÁ 100% TERMINADO
+
+> **Estado Final:** IMPLEMENTADO, VERIFICADO Y SINCRONIZADO EN PRODUCCIÓN  
+> **Componentes Activos:**
+> 1. Matriz oficial de distanciamiento (50m, 75m, 100m, 150m, 200m vías especiales) en `constants.ts`.
+> 2. Algoritmo geodésico Haversine recíproco con sensor bidireccional y bloqueo de guardado en `PanelDrawer.tsx`.
+> 3. Anillos de buffer dinámicos interactivos en `MapView.tsx` (Verde Teal `#0D9488` si apto / Rojo Carmín `#EF4444` en conflicto).
+
+
