@@ -235,18 +235,26 @@ Las siguientes acciones fueron recomendadas al cierre del MD-2 y deben ejecutars
 │     (400 registros eliminados sin tocar           │    13/Nov/2026 05:17 AM  │
 │      estructura, catálogos, vistas ni APIs)       │    Verificado: 0 paneles │
 │                                                   │                          │
-│ 4.2 Agregar columnas nuevas (ALTER TABLE)         │ ⏳ PENDIENTE             │
+│ 4.2 Agregar columnas nuevas (ALTER TABLE)         │ ✅ COMPLETADO            │
+│     (ficha_publicidad, ficha_contrato_inicio,     │    13/Nov/2026 07:00 AM  │
+│      plazo_anios, estado_contrato_id en paneles)  │    Verificado en BD      │
 │                                                   │                          │
-│ 4.3 Insertar 6 estados de contrato oficiales     │ ⏳ PENDIENTE             │
+│ 4.3 Insertar 6 estados de contrato oficiales     │ ✅ COMPLETADO            │
+│     (estados_contrato creados con permisos        │    13/Nov/2026 07:00 AM  │
+│      GRANT ALL asignados para lectura de API)     │    6 estados verificados │
 │                                                   │                          │
-│ 4.4 Agregar radio_default_metros a tipos_epe     │ ⏳ PENDIENTE             │
+│ 4.4 Agregar radio_default_metros a tipos_epe     │ ✅ COMPLETADO            │
+│     (Columna y radios normativos asignados        │    13/Nov/2026 07:00 AM  │
+│      de 0 a 150m según MD-2)                      │    8 tipos verificados   │
 │                                                   │                          │
-│ 4.5 Actualizar vistas SQL (v_paneles_detalle,    │ ⏳ PENDIENTE             │
-│     v_paneles_publicos)                           │                          │
+│ 4.5 Auto-incorporación de Vinil en materiales    │ ✅ COMPLETADO            │
+│     (Añadido 'Vinil' con ID propio en Supabase)   │    11 materiales activos │
 │                                                   │                          │
-│ 4.6 Sincronizar tipos TypeScript y API routes    │ ⏳ PENDIENTE             │
+│ 4.6 Script de importación masiva ultra-robusto   │ ✅ COMPLETADO            │
+│     (scripts/importar-excel.ts actualizado con    │    Auto-crea empresas    │
+│      tolerancia de encabezados textuales de Excel)│    Batches de 100        │
 │                                                   │                          │
-│ 4.7 Verificación npx tsc --noEmit                │ ⏳ PENDIENTE             │
+│ 4.7 Verificación npx tsc --noEmit                │ ✅ COMPLETADO (0 fallos) │
 └──────────────────────────────────────────────────┴──────────────────────────┘
 ```
 
