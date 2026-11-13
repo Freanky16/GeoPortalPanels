@@ -42,7 +42,7 @@ El rediseño de Supabase se ejecutará **sin romper endpoints, vistas ni APIs**.
 ## 2. Catálogos Oficiales y Nuevas Variables
 
 ### A. Catálogo: `estados_contrato` (6 Variables Oficiales)
-Se actualiza la tabla o enum `estados_contrato` para reflejar con exactitud la situación legal metropolitana:
+Se crea la tabla catálogo `estados_contrato` para reflejar con exactitud la situación legal metropolitana:
 
 | ID | Estado Contractual | ¿Tiene N° Contrato? | ¿Tiene Ficha Publicidad? |
 | :-: | :--- | :-: | :-: |
@@ -55,37 +55,59 @@ Se actualiza la tabla o enum `estados_contrato` para reflejar con exactitud la s
 
 ---
 
-### B. Catálogo: `tipos_via` (4 Variables Oficiales)
-Estructura oficial para clasificar la jerarquía vial según el Sistema Vial Metropolitano:
-1. **Arterial**
-2. **Colectora**
+### B. Catálogo: `tipos_via` (4 Variables Oficiales - 100% Validado en BD)
+1. **Colectora**
+2. **Arterial**
 3. **Expresa**
 4. **Intercambio**
 
 ---
 
-### C. Catálogo: `espacios_publicitarios` (8 Variables Oficiales)
-Ubicación física específica de la infraestructura dentro de la sección vial:
-1. **Bajo puente de intercambio**
-2. **Franja de vereda**
-3. **Isla de intercambio**
-4. **Puente peatonal**
+### C. Catálogo: `espacios_publicitarios` (8 Variables Oficiales - 100% Validado en BD)
+1. **Franja de vereda**
+2. **Separador lateral**
+3. **Separador central**
+4. **Isla de intercambio**
 5. **Remanente de intercambio**
-6. **Separador central**
-7. **Separador lateral**
-8. **Túnel**
+6. **Túnel**
+7. **Puente peatonal**
+8. **Bajo puente de intercambio**
 
 ---
 
-### D. Catálogo: `tipos_epe` (9 Variables y Radios Normativos)
+### D. Catálogo: `tipos_epe` (8 Variables Oficiales y Radios Normativos)
 1. **Paleta publicitaria** (`radio_default_metros: 50`)
 2. **Panel monumental unipolar** (`radio_default_metros: 100`)
-3. **Panel monumental** (`radio_default_metros: 150`, regla 200m si vía es especial)
+3. **Panel monumental** (`radio_default_metros: 150`, regla de **200m** en Vías Especiales: Panamericana Norte/Sur, Antigua Panamericana Sur, Carretera Central, Ramiro Prialé)
 4. **Panel monumental volumétrico** (`radio_default_metros: 150`)
 5. **Tótem** (`radio_default_metros: 75`)
 6. **Panel simple** (`radio_default_metros: 75`)
 7. **Mobiliario urbano - nomenclatura de vías** (`radio_default_metros: 0`)
 8. **Otro** (`radio_default_metros: 0`)
+
+---
+
+### E. Catálogo: `caracteristicas_tecnicas` (4 Principales + Especiales)
+1. **Luminoso**
+2. **Iluminado**
+3. **Especial**
+4. **Sencillo**
+*(Adicionales de archivo: BANNER, OTRO)*
+
+---
+
+### F. Catálogo: `materiales` (11 Variables Oficiales con 'Vinil' Añadido)
+1. **Metal**
+2. **Madera**
+3. **Acrílico**
+4. **Vidrio**
+5. **Vinil** *(incorporado)*
+6. **Banner**
+7. **Backlight Film**
+8. **LED**
+9. **Lona**
+10. **Mixto**
+11. **Otro**
 
 ---
 
