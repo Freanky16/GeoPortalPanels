@@ -139,3 +139,88 @@ PASO 3: Evaluación de Vecinos
 > 4. Cambio cromático dinámico del buffer en MapLibre: Verde Teal (#0D9488) cuando la ubicación es apta y Rojo Carmín (#EF4444) en caso de saturación o conflicto normativo.
 > 5. Preparación para sincronización con la base de datos Supabase (columna `radio_default_metros` en el catálogo `tipos_epe`).
 
+---
+
+## Decisión de Arquitectura: ¿Distanciamiento en código o en BD?
+
+Se optó por la **arquitectura híbrida desacoplada**. Los radios base viven en el catálogo `tipos_epe` de Supabase (una sola fila por tipo). El algoritmo de evaluación espacial se ejecuta en el frontend con Haversine. Así, si la MML cambia una ordenanza (ej. Paleta de 50m a 60m), **solo se actualiza 1 fila** en la base de datos y todos los paneles recalculan automáticamente.
+
+```
+[Base de Datos: Supabase]                        [Frontend: Motor GIS]
+Tabla Catálogo: "tipos_epe"                       PanelDrawer.tsx / constants.ts
+├── nombre: 'Paleta publicitaria'                 ├── Lee radio_default_metros del catálogo
+├── radio_default_metros: 50                      ├── Evalúa Dirección vs Vías Especiales
+└── (Se actualiza 1 vez si cambia ordenanza)      ├── Cálculo Haversine con vecinos existentes
+                                                  └── Bloqueo preventivo si d < R
+```
+
+---
+
+## Flujo del Algoritmo Espacial Implementado
+
+```
+                       [USUARIO MARCA COORDENADAS]
+                                    │
+                                    ▼
+                      [SELECCIONA TIPO DE PUBLICIDAD]
+                                    │
+          ┌─────────────────────────┴─────────────────────────┐
+          │ ¿Es Panel Monumental?                             │
+          ├───────────────────────────────────────────────────┤
+          │ SÍ                                                │ NO
+          ▼                                                   ▼
+[LECTOR DEL CAMPO DIRECCIÓN]                         [RADIO DEL CATÁLOGO]
+¿Contiene "Panamericana", "Carretera                 • Paleta: 50m
+Central", "Ramiro Prialé"?                           • Unipolar: 100m
+    ├── SÍ ➔ Radio = 200 m (Vía Especial)            • Tótem / Simple: 75m
+    └── NO ➔ Radio = 150 m (Vía Regular)             • Mobiliario / Otro: 0m
+                                    │
+                                    ▼
+                [CÁLCULO HAVERSINE CON PANELES EXISTENTES]
+                                    │
+          ┌─────────────────────────┴─────────────────────────┐
+          │ ¿d < max(Radio Propio, Radio Vecino)?             │
+          │ (Excepción: Si cualquiera tiene radio 0m, NO hay  │
+          │  conflicto jamás — Mobiliario Urbano es libre.)    │
+          ├───────────────────────────────────────────────────┤
+          │ SÍ (Conflicto)                                    │ NO (Apto)
+          ▼                                                   ▼
+┌──────────────────────────────────────┐     ┌──────────────────────────────────────┐
+│ • Círculo: ROJO CARMÍN (#EF4444)     │     │ • Círculo: VERDE TEAL (#0D9488)      │
+│ • Drawer: Alerta de saturación       │     │ • Drawer: Radio normativo activo     │
+│ • Botón "Guardar": BLOQUEADO         │     │ • Botón "Guardar": HABILITADO        │
+└──────────────────────────────────────┘     └──────────────────────────────────────┘
+```
+
+---
+
+## Matriz de Componentes: Estado de Implementación
+
+```
+┌─────────────────────────────────┬───────────┬──────────────────────────────────────────┐
+│ COMPONENTE / ARCHIVO            │ ESTADO    │ DETALLE                                  │
+├─────────────────────────────────┼───────────┼──────────────────────────────────────────┤
+│ src/lib/constants.ts            │ ✅ LISTO  │ Matriz oficial (50, 100, 150, 75, 0).    │
+│                                 │           │ Funciones: obtenerRadioNormativo(),       │
+│                                 │           │ esViaEspecial(). Lista de keywords.       │
+│                                 │           │                                          │
+│ src/store/useUIStore.ts         │ ✅ LISTO  │ puntoSimulacion con flag enConflicto.     │
+│                                 │           │                                          │
+│ src/components/Panel/           │ ✅ LISTO  │ Cálculo Haversine recíproco. Evaluación   │
+│ PanelDrawer.tsx                 │           │ max(R_nuevo, R_vecino). Bloqueo guardar.  │
+│                                 │           │ Indicador visual de radio y vía especial. │
+│                                 │           │                                          │
+│ src/components/Map/             │ ✅ LISTO  │ Buffer dinámico en MapLibre.              │
+│ MapView.tsx                     │           │ Verde Teal si apto / Rojo Carmín si no.   │
+└─────────────────────────────────┴───────────┴──────────────────────────────────────────┘
+```
+
+---
+
+## Recomendaciones y Pendientes para el MD-3 (Base de Datos)
+
+1. **Agregar columna `radio_default_metros`** (INTEGER) en la tabla catálogo `tipos_epe` de Supabase. Esto permitirá modificar radios desde la base de datos sin redeployar código.
+2. **Modificar el frontend** para que al cargar los catálogos, el radio venga incluido en cada `TipoEPE` y se use dinámicamente en lugar del diccionario hardcodeado en `constants.ts`.
+3. **Agregar columna `es_via_especial` (BOOLEAN) o evaluarla al vuelo en la vista SQL** usando `ILIKE` sobre el campo `direccion`, para consultas desde el backend.
+4. **Auditoría de los datos actuales:** Validar que los 400 paneles existentes tengan correctamente asignados sus `tipo_epe_id` y su `direccion` para que el sensor funcione con datos reales al 100%.
+
