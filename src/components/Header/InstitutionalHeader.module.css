@@ -116,8 +116,8 @@
 .searchInput:focus {
   outline: none;
   background: #FFFFFF;
-  border-color: #1A73E8;
-  box-shadow: 0 1px 6px rgba(26, 115, 232, 0.25);
+  border-color: #0D9488;
+  box-shadow: 0 1px 6px rgba(13, 148, 136, 0.25);
 }
 
 .searchInput::placeholder {
@@ -192,7 +192,7 @@
 
 .suggestionCode {
   font-weight: 700;
-  color: #1A73E8;
+  color: #0D9488;
 }
 
 .suggestionDetail {
@@ -269,10 +269,10 @@
 }
 
 .headerBtnActive {
-  background: #1A73E8 !important;
-  border-color: #1A73E8 !important;
+  background: #0D9488 !important;
+  border-color: #0D9488 !important;
   color: #FFFFFF !important;
-  box-shadow: 0 2px 6px rgba(26, 115, 232, 0.35) !important;
+  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.35) !important;
 }
 
 .tecnicoActivoBtn {

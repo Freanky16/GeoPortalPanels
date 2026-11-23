@@ -45,11 +45,11 @@ html, body {
   --text-muted: #5F6368;
   --text-inverse: #202124;
 
-  /* Acento principal — Azul Google */
-  --accent: #8AB4F8;
-  --accent-hover: #D2E3FC;
-  --accent-light: rgba(138, 180, 248, 0.15);
-  --accent-glow: rgba(138, 180, 248, 0.3);
+  /* Acento principal institucional — Verde Marino / Teal #0D9488 */
+  --accent: #2DD4BF;
+  --accent-hover: #5EEAD4;
+  --accent-light: rgba(13, 148, 136, 0.2);
+  --accent-glow: rgba(45, 212, 191, 0.35);
 
   /* Acento secundario */
   --accent2: #F28B82;
@@ -124,10 +124,10 @@ html, body {
   --border-color: #DADCE0;
   --border-hover: #BDC1C6;
   
-  --accent: #1A73E8;
-  --accent-hover: #1557B0;
-  --accent-light: rgba(26, 115, 232, 0.12);
-  --accent-glow: rgba(26, 115, 232, 0.25);
+  --accent: #0D9488;
+  --accent-hover: #0F766E;
+  --accent-light: rgba(13, 148, 136, 0.12);
+  --accent-glow: rgba(13, 148, 136, 0.25);
   
   --color-vigente: #1E8E3E;
   --color-por-vencer: #F9AB00;

@@ -46,7 +46,7 @@
 }
 
 .controlBtnActive {
-  background: var(--accent);
+  background: #0D9488;
   color: #fff;
 }
 
@@ -112,7 +112,7 @@
   flex-direction: column;
   gap: 2px;
   /* Borde superior con acento */
-  border-top: 2px solid var(--accent);
+  border-top: 2px solid #0D9488;
 }
 
 .switcherTitle {
@@ -147,8 +147,8 @@
 }
 
 .styleOptionActive {
-  background: var(--accent-light);
-  color: var(--accent);
+  background: rgba(13, 148, 136, 0.12);
+  color: #0D9488;
   font-weight: 600;
 }
 
@@ -165,14 +165,14 @@
 }
 
 .styleOptionActive .styleRadio {
-  border-color: var(--accent);
+  border-color: #0D9488;
 }
 
 .styleRadioInner {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--accent);
+  background: #0D9488;
 }
 
 @keyframes scaleIn {

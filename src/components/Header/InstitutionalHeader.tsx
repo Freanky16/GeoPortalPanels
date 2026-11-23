@@ -474,7 +474,7 @@ export default function InstitutionalHeader() {
           {activeFiltersCount > 0 && (
             <span
               style={{
-                background: '#1A73E8',
+                background: '#0D9488',
                 color: '#FFFFFF',
                 borderRadius: '99px',
                 padding: '0 6px',
