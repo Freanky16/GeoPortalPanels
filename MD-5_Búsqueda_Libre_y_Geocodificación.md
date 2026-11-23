@@ -97,18 +97,41 @@ Cuando el usuario activa el modo *"Marcar en Mapa"* y hace clic sobre una calle:
 # 🚀 ESTE PLAN YA SE REALIZÓ Y ESTÁ 100% TERMINADO
 
 > **Estado Final:** IMPLEMENTADO, VERIFICADO Y SINCRONIZADO EN PRODUCCIÓN  
+> **Commits:** `80a01d6` (geocodificación base) · `3e129ec` (atajo flotante + auth gate)  
 > **Fecha de Finalización:** Noviembre 2026  
 > **Componentes y Capacidades Operativas Implementadas:**
+>
 > 1. **Búsqueda Cartográfica Libre (Estilo Google Earth):**
->    * Validador predictivo y parser flexible de coordenadas geográficas en `InstitutionalHeader.tsx` (soporta formatos con coma, espacio, o inversión [lng, lat]).
->    * Opción de vuelo directo `flyTo` con zoom 17 activable mediante click o tecla Enter.
->    * Detección automática de ámbito geográfico con aviso sutil si la coordenada cae fuera de Lima Metropolitana.
-> 2. **Marcador Temporal y Chip No Invasivo:**
->    * Pin visual en mapa con onda Teal `#0D9488` en `MapView.tsx`.
->    * Tarjeta flotante no bloqueante con coordenadas exactas, advertencia de ámbito si aplica y botón directo *"Registrar panel aquí"*.
+>    * Validador predictivo y parser flexible de coordenadas en `InstitutionalHeader.tsx` (soporta coma, espacio o inversión [lng, lat]).
+>    * Vuelo directo `flyTo` zoom 17 con Enter o clic en la sugerencia.
+>    * Detección automática de ámbito: aviso sutil si la coordenada cae fuera de Lima Metropolitana.
+>
+> 2. **Marcador Temporal y Tarjeta Flotante No Invasiva:**
+>    * Pin visual pulsante en mapa con onda Teal `#0D9488` y etiqueta de coordenadas encima.
+>    * Tarjeta flotante en esquina inferior izquierda: coordenadas exactas, dirección geocodificada y botón de acción.
+>    * Botón **"Registrar panel aquí"** si el usuario es Gestor (abre Drawer directamente con coords precargadas).
+>    * Botón **"Ingresar como Técnico para Registrar"** si el usuario es público (abre `AccesoTecnicoModal`).
+>
 > 3. **Geocodificación Inversa Asistida:**
->    * Endpoint dedicado `/api/geocode/reverse` con cabeceras autorizadas, consulta segura y tolerancia a fallos.
->    * Autocompletado inteligente de Dirección / Vía y Distrito en `PanelDrawer.tsx` al capturar coordenadas en el mapa.
-> 4. **Calidad de Código:** Compilación TypeScript estricta con 0 errores (`npx tsc --noEmit`).
+>    * Endpoint dedicado `/api/geocode/reverse` (proxy Nominatim) con cabeceras autorizadas y tolerancia a fallos.
+>    * Autocompletado de Dirección / Vía y Distrito en `PanelDrawer.tsx` al capturar coordenadas en el mapa.
+>
+> 4. **Atajo Flotante en el Mapa — Botón Inspector (Persona + Pin):**
+>    * Botón redondo flotante en esquina superior derecha del mapa (`.mapShortcutBtn`) con icono de persona geodésica.
+>    * Al hacer clic: activa el **modo marcador libre** (`modoMarcarPuntoLibre`) → cursor cambia a mira (`crosshair`).
+>    * Aparece **pill banner** oscuro en la parte superior del mapa con punto pulsante Teal: *"Haz clic en el mapa para capturar la coordenada"* y botón Cancelar.
+>    * Al hacer clic en el mapa: pin cae, se geocodifica la ubicación (asíncrono, sin bloquear UI), aparece la tarjeta flotante.
+>    * El mismo botón aparece también en el Header (`InstitutionalHeader.tsx`) como atajo rápido "Marcar Punto".
+>    * **Auth gate completo:** estado `modalTecnicoAbierto` migrado a `useUIStore` para ser disparable desde el mapa y el header sin prop drilling.
+>
+> 5. **Calidad de Código:** Compilación TypeScript estricta con **0 errores** (`npx tsc --noEmit`) verificada en ambos commits.
+
+---
+
+# ██████████████████████████████████████████████████████████
+# ████                                                    ████
+# ████           MD-5  —  COMPLETADO AL 100%             ████
+# ████                                                    ████
+# ██████████████████████████████████████████████████████████
 
 
