@@ -45,6 +45,14 @@ interface UIStore {
   toggleLeyenda: () => void;
   setLeyendaAbierta: (val: boolean) => void;
 
+  // Capas Oficiales MML (Conmutables, 100% independientes)
+  capaSistemaVialActiva: boolean;
+  toggleCapaSistemaVial: () => void;
+  setCapaSistemaVialActiva: (val: boolean) => void;
+  capaZonificacionActiva: boolean;
+  toggleCapaZonificacion: () => void;
+  setCapaZonificacionActiva: (val: boolean) => void;
+
   // Modo captura en mapa (mira geodésica)
   modoCapturaCoordenadas: boolean;
   setModoCapturaCoordenadas: (val: boolean) => void;
@@ -102,6 +110,8 @@ export const useUIStore = create<UIStore>((set) => ({
   mostrarRadio100m: false,
   mostrarTodosRadios100m: false,
   leyendaAbierta: false,
+  capaSistemaVialActiva: false,
+  capaZonificacionActiva: false,
   modoCapturaCoordenadas: false,
   coordenadasCapturadas: null,
   puntoSimulacion: null,
@@ -138,6 +148,15 @@ export const useUIStore = create<UIStore>((set) => ({
     set((state) => ({ leyendaAbierta: !state.leyendaAbierta })),
   setLeyendaAbierta: (val) =>
     set({ leyendaAbierta: val }),
+
+  toggleCapaSistemaVial: () =>
+    set((state) => ({ capaSistemaVialActiva: !state.capaSistemaVialActiva })),
+  setCapaSistemaVialActiva: (val) =>
+    set({ capaSistemaVialActiva: val }),
+  toggleCapaZonificacion: () =>
+    set((state) => ({ capaZonificacionActiva: !state.capaZonificacionActiva })),
+  setCapaZonificacionActiva: (val) =>
+    set({ capaZonificacionActiva: val }),
 
   toggleFiltrosPanel: () =>
     set((state) => ({ filtrosPanelAbierto: !state.filtrosPanelAbierto })),

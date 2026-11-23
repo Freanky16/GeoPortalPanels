@@ -91,6 +91,13 @@
   border-color: var(--border-hover);
 }
 
+.switcherToggleActive {
+  background: #F0FDFA !important;
+  color: #0D9488 !important;
+  border-color: #0D9488 !important;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.25), var(--shadow-md) !important;
+}
+
 .switcherLabel {
   pointer-events: none;
 }

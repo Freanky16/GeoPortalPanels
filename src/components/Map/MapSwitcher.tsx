@@ -8,12 +8,16 @@ import styles from './MapControls.module.css';
 export default function MapSwitcher() {
   const mapStyle = useUIStore((state) => state.mapStyle);
   const setMapStyle = useUIStore((state) => state.setMapStyle);
+  const capaSistemaVialActiva = useUIStore((state) => state.capaSistemaVialActiva);
+  const toggleCapaSistemaVial = useUIStore((state) => state.toggleCapaSistemaVial);
+  const capaZonificacionActiva = useUIStore((state) => state.capaZonificacionActiva);
+  const toggleCapaZonificacion = useUIStore((state) => state.toggleCapaZonificacion);
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div className={styles.mapSwitcher}>
       <button
-        className={styles.switcherToggle}
+        className={`${styles.switcherToggle} ${capaSistemaVialActiva || capaZonificacionActiva ? styles.switcherToggleActive : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Cambiar capa del mapa"
       >
@@ -34,7 +38,6 @@ export default function MapSwitcher() {
               className={`${styles.styleOption} ${mapStyle === key ? styles.styleOptionActive : ''}`}
               onClick={() => {
                 setMapStyle(key as MapStyleKey);
-                setIsOpen(false);
               }}
             >
               <span className={styles.styleRadio}>
@@ -43,6 +46,61 @@ export default function MapSwitcher() {
               {name}
             </button>
           ))}
+
+          <div style={{ height: '1px', background: 'var(--border-color)', margin: '8px 0' }} />
+
+          {/* Sección Capas MML solicitada por el usuario */}
+          <div className={styles.switcherTitle}>Capas MML</div>
+
+          <button
+            className={`${styles.styleOption} ${capaSistemaVialActiva ? styles.styleOptionActive : ''}`}
+            onClick={() => toggleCapaSistemaVial()}
+          >
+            <span
+              style={{
+                width: '16px',
+                height: '16px',
+                borderRadius: '4px',
+                border: `2px solid ${capaSistemaVialActiva ? '#0D9488' : 'var(--text-muted)'}`,
+                background: capaSistemaVialActiva ? '#0D9488' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                color: '#FFFFFF',
+                fontSize: '11px',
+                fontWeight: 900,
+              }}
+            >
+              {capaSistemaVialActiva ? '✓' : ''}
+            </span>
+            Sistema Vial
+          </button>
+
+          <button
+            className={`${styles.styleOption} ${capaZonificacionActiva ? styles.styleOptionActive : ''}`}
+            onClick={() => toggleCapaZonificacion()}
+          >
+            <span
+              style={{
+                width: '16px',
+                height: '16px',
+                borderRadius: '4px',
+                border: `2px solid ${capaZonificacionActiva ? '#0D9488' : 'var(--text-muted)'}`,
+                background: capaZonificacionActiva ? '#0D9488' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                color: '#FFFFFF',
+                fontSize: '11px',
+                fontWeight: 900,
+              }}
+            >
+              {capaZonificacionActiva ? '✓' : ''}
+            </span>
+            Zonificación
+          </button>
         </div>
       )}
     </div>

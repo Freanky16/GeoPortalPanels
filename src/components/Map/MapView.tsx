@@ -10,6 +10,7 @@ import { usePanelStore } from '@/store/usePanelStore';
 import { useFilterStore } from '@/store/useFilterStore';
 import { MAP_STYLES, INITIAL_VIEW } from '@/lib/mapConfig';
 import { ESTADO_COLORS, TIPO_EPE_COLORS } from '@/lib/constants';
+import { CAPAS_MML_CONFIG, CLASIFICACION_VIAL_COLORS } from '@/lib/capasMMLConfig';
 import { Panel } from '@/types';
 
 // Configurar el worker estático para Next.js (Turbopack)
@@ -41,6 +42,14 @@ const SIMULACION_SOURCE_ID = 'simulacion-source';
 const SIMULACION_BUFFER_FILL_LAYER = 'simulacion-buffer-fill';
 const SIMULACION_BUFFER_LINE_LAYER = 'simulacion-buffer-line';
 const SIMULACION_POINT_LAYER = 'simulacion-point';
+
+// Capas Oficiales MML: Sistema Vial y Zonificación
+const SISTEMA_VIAL_SOURCE_ID = CAPAS_MML_CONFIG.sistemaVial.sourceId;
+const SISTEMA_VIAL_LINE_LAYER = CAPAS_MML_CONFIG.sistemaVial.layerLineId;
+const SISTEMA_VIAL_LABEL_LAYER = CAPAS_MML_CONFIG.sistemaVial.layerLabelId;
+const ZONIFICACION_SOURCE_ID = CAPAS_MML_CONFIG.zonificacion.sourceId;
+const ZONIFICACION_FILL_LAYER = CAPAS_MML_CONFIG.zonificacion.layerFillId;
+const ZONIFICACION_LINE_LAYER = CAPAS_MML_CONFIG.zonificacion.layerLineId;
 
 /**
  * Genera un polígono GeoJSON circular con radio en metros
@@ -187,6 +196,8 @@ export default function MapView() {
   const toggleModoMarcarPuntoLibre = useUIStore((state) => state.toggleModoMarcarPuntoLibre);
   const setModalTecnicoAbierto = useUIStore((state) => state.setModalTecnicoAbierto);
   const esGestor = usePanelStore((state) => state.esGestor);
+  const capaSistemaVialActiva = useUIStore((state) => state.capaSistemaVialActiva);
+  const capaZonificacionActiva = useUIStore((state) => state.capaZonificacionActiva);
 
   // Hook que retorna los paneles filtrados en tiempo real
   const panelesFiltrados = useFilteredPanels();
@@ -573,6 +584,128 @@ export default function MapView() {
         },
         filter: ['==', '$type', 'Point'],
       });
+    }
+
+    // 11. Capa y fuente: Sistema Vial Metropolitano MML (A87) — Insertada debajo de los paneles
+    if (!mapInstance.getSource(SISTEMA_VIAL_SOURCE_ID)) {
+      mapInstance.addSource(SISTEMA_VIAL_SOURCE_ID, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+    }
+
+    if (!mapInstance.getLayer(SISTEMA_VIAL_LINE_LAYER)) {
+      mapInstance.addLayer(
+        {
+          id: SISTEMA_VIAL_LINE_LAYER,
+          type: 'line',
+          source: SISTEMA_VIAL_SOURCE_ID,
+          layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+          },
+          paint: {
+            'line-color': [
+              'match',
+              ['get', 'CLASIF_1'],
+              'EXPRESAS', CLASIFICACION_VIAL_COLORS.EXPRESAS,
+              'SEMI EXPRESAS', CLASIFICACION_VIAL_COLORS['SEMI EXPRESAS'],
+              'ARTERIALES', CLASIFICACION_VIAL_COLORS.ARTERIALES,
+              'COLECTORAS', CLASIFICACION_VIAL_COLORS.COLECTORAS,
+              CLASIFICACION_VIAL_COLORS.DEFAULT,
+            ],
+            'line-width': [
+              'interpolate', ['linear'], ['zoom'],
+              10, 1.2,
+              13, 2.8,
+              16, 5.0,
+            ],
+            'line-opacity': 0.85,
+          },
+        },
+        PANELES_HALO_LAYER
+      );
+    }
+
+    if (!mapInstance.getLayer(SISTEMA_VIAL_LABEL_LAYER)) {
+      mapInstance.addLayer(
+        {
+          id: SISTEMA_VIAL_LABEL_LAYER,
+          type: 'symbol',
+          source: SISTEMA_VIAL_SOURCE_ID,
+          layout: {
+            'symbol-placement': 'line',
+            'text-field': ['get', 'NOMBRE_1'],
+            'text-size': [
+              'interpolate', ['linear'], ['zoom'],
+              11, 9,
+              14, 11,
+              16, 13,
+            ],
+            'text-offset': [0, -0.6],
+            'text-allow-overlap': false,
+            'text-ignore-placement': false,
+          },
+          paint: {
+            'text-color': '#FFFFFF',
+            'text-halo-color': '#0F172A',
+            'text-halo-width': 1.5,
+          },
+        },
+        PANELES_HALO_LAYER
+      );
+    }
+
+    // 12. Capa y fuente: Zonificación Metropolitana IMP — Insertada antes de los distritos
+    if (!mapInstance.getSource(ZONIFICACION_SOURCE_ID)) {
+      mapInstance.addSource(ZONIFICACION_SOURCE_ID, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+    }
+
+    if (!mapInstance.getLayer(ZONIFICACION_FILL_LAYER)) {
+      mapInstance.addLayer(
+        {
+          id: ZONIFICACION_FILL_LAYER,
+          type: 'fill',
+          source: ZONIFICACION_SOURCE_ID,
+          paint: {
+            'fill-color': [
+              'case',
+              ['in', 'RDA', ['get', 'simb_zoni']], '#B72020',
+              ['in', 'RDM', ['get', 'simb_zoni']], '#F99E19',
+              ['in', 'RDB', ['get', 'simb_zoni']], '#FDE047',
+              ['in', 'CZ', ['get', 'simb_zoni']], '#DC2626',
+              ['in', 'CI', ['get', 'simb_zoni']], '#991B1B',
+              ['in', 'CV', ['get', 'simb_zoni']], '#F87171',
+              ['in', 'I', ['get', 'simb_zoni']], '#9333EA',
+              ['in', 'OU', ['get', 'simb_zoni']], '#2563EB',
+              ['in', 'ZRE', ['get', 'simb_zoni']], '#16A34A',
+              ['in', 'ZR', ['get', 'simb_zoni']], '#10B981',
+              '#94A3B8',
+            ],
+            'fill-opacity': 0.38,
+          },
+        },
+        DISTRITOS_FILL_LAYER
+      );
+    }
+
+    if (!mapInstance.getLayer(ZONIFICACION_LINE_LAYER)) {
+      mapInstance.addLayer(
+        {
+          id: ZONIFICACION_LINE_LAYER,
+          type: 'line',
+          source: ZONIFICACION_SOURCE_ID,
+          paint: {
+            'line-color': '#475569',
+            'line-width': 0.8,
+            'line-opacity': 0.5,
+          },
+        },
+        DISTRITOS_FILL_LAYER
+      );
     }
   }, []);
 
@@ -1208,6 +1341,55 @@ export default function MapView() {
       }
     };
   }, [ubicacionLibre, mapReady]);
+
+  // 6.9. Capa Oficial MML: Carga / Descarga de Sistema Vial Metropolitano
+  useEffect(() => {
+    if (!mapReady || !map.current) return;
+    const source = map.current.getSource(SISTEMA_VIAL_SOURCE_ID) as maplibregl.GeoJSONSource;
+    if (!source) return;
+
+    if (capaSistemaVialActiva) {
+      fetch('/api/capas/sistema-vial')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((geojson) => {
+          if (geojson && map.current) {
+            const src = map.current.getSource(SISTEMA_VIAL_SOURCE_ID) as maplibregl.GeoJSONSource;
+            if (src) {
+              src.setData(geojson);
+            }
+          }
+        })
+        .catch((err) => console.error('Error cargando Sistema Vial en mapa:', err));
+    } else {
+      source.setData({ type: 'FeatureCollection', features: [] });
+    }
+  }, [capaSistemaVialActiva, mapReady]);
+
+  // 6.10. Capa Oficial MML: Carga / Descarga de Zonificación Metropolitana (IMP)
+  useEffect(() => {
+    if (!mapReady || !map.current) return;
+    const source = map.current.getSource(ZONIFICACION_SOURCE_ID) as maplibregl.GeoJSONSource;
+    if (!source) return;
+
+    if (capaZonificacionActiva) {
+      const bounds = map.current.getBounds();
+      const bboxStr = `${bounds.getWest().toFixed(4)},${bounds.getSouth().toFixed(4)},${bounds.getEast().toFixed(4)},${bounds.getNorth().toFixed(4)}`;
+
+      fetch(`/api/capas/zonificacion?bbox=${bboxStr}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((geojson) => {
+          if (geojson && map.current) {
+            const src = map.current.getSource(ZONIFICACION_SOURCE_ID) as maplibregl.GeoJSONSource;
+            if (src) {
+              src.setData(geojson);
+            }
+          }
+        })
+        .catch((err) => console.error('Error cargando Zonificación en mapa:', err));
+    } else {
+      source.setData({ type: 'FeatureCollection', features: [] });
+    }
+  }, [capaZonificacionActiva, mapReady]);
 
   return (
     <div className={styles.mapWrapper}>
