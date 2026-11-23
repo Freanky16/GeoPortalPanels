@@ -1169,19 +1169,26 @@ export default function MapView() {
 
     if (!ubicacionLibre) return;
 
-    // Crear pin estilizado en el DOM con estilo Teal institucional y etiqueta de coordenadas sutil encima
+    // Crear pin estilizado en el DOM con anclaje geométrico exacto en la punta inferior
     const el = document.createElement('div');
     el.className = 'ubicacion-libre-marker';
+    el.style.display = 'flex';
+    el.style.flexDirection = 'column';
+    el.style.alignItems = 'center';
+    el.style.pointerEvents = 'none';
+    el.style.userSelect = 'none';
+
     el.innerHTML = `
-      <div style="position: relative; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -100%); cursor: pointer;">
-        <div style="background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: #FFFFFF; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.3); white-space: nowrap; margin-bottom: 6px; pointer-events: none; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 4px;">
-          <span style="color: #2DD4BF; font-size: 10px;">📍</span>
-          <span>${ubicacionLibre.lat.toFixed(5)}, ${ubicacionLibre.lng.toFixed(5)}</span>
-        </div>
-        <div style="position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
-          <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(13, 148, 136, 0.28); animation: beaconRipple 1.4s ease-out infinite;"></div>
-          <div style="position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #0D9488; border: 2.5px solid #FFFFFF; box-shadow: 0 2px 10px rgba(0,0,0,0.4);"></div>
-        </div>
+      <div style="background: #1E293B; color: #FFFFFF; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); white-space: nowrap; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 5px; letter-spacing: 0.2px;">
+        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#38BDF8;"></span>
+        <span>${ubicacionLibre.lat.toFixed(5)}, ${ubicacionLibre.lng.toFixed(5)}</span>
+      </div>
+      <div style="position: relative; width: 28px; height: 36px; display: flex; justify-content: center; align-items: flex-end;">
+        <svg width="28" height="36" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 3px 5px rgba(0,0,0,0.35));">
+          <path d="M14 0C6.268 0 0 6.268 0 14C0 24.5 14 36 14 36C14 36 28 24.5 28 14C28 6.268 21.732 0 14 0Z" fill="#2563EB"/>
+          <circle cx="14" cy="14" r="5.5" fill="#FFFFFF"/>
+          <circle cx="14" cy="14" r="3" fill="#1D4ED8"/>
+        </svg>
       </div>
     `;
 
