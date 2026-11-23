@@ -136,3 +136,40 @@ Con este documento cerramos la arquitectura teórica completa del Geoportal:
 5. 📄 [MD-5_Búsqueda_Libre_y_Geocodificación.md](file:///d:/ProyectoMapsHoarding/MD-5_B%C3%BAsqueda_Libre_y_Geocodificaci%C3%B3n.md): Vuelo a coordenadas libres no invasivo y autocompletado de calles.
 6. 📄 [MD-6_Integracion_Capas_MML_ArcGIS.md](file:///d:/ProyectoMapsHoarding/MD-6_Integracion_Capas_MML_ArcGIS.md): Conexión de Zonificación y Vías del IMP sobre MapLibre.
 
+---
+
+# 🚀 ESTE PLAN YA SE REALIZÓ Y ESTÁ 100% TERMINADO
+
+> **Estado Final:** IMPLEMENTADO, VERIFICADO Y SINCRONIZADO EN PRODUCCIÓN  
+> **Commit:** `569cc34` (Capas MML: Sistema Vial y Zonificación)  
+> **Fecha de Finalización:** Noviembre 2026  
+> **Componentes y Capacidades Operativas Implementadas:**
+>
+> 1. **Endpoints Oficiales MML Extraídos y Conectados:**
+>    * Extracción exitosa mediante ingeniería inversa del Web Experience de la MML/IMP hacia el FeatureServer oficial.
+>    * Endpoint proxy `/api/capas/sistema-vial`: Carga y caché (6 horas) de los 1,475 ejes viales de Lima con clasificación oficial (Expresas, Arteriales, Colectoras).
+>    * Endpoint proxy `/api/capas/zonificacion`: Carga dinámica de polígonos de zonificación urbana oficial (IMP) con filtrado espacial por Viewport/BBOX en tiempo real.
+>
+> 2. **Integración Cartográfica Segura y No Invasiva:**
+>    * Archivo de configuración aislado en `src/lib/capasMMLConfig.ts`.
+>    * Ambas capas son **100% conmutables y opcionales** (por defecto nacen apagadas para cero lentitud).
+>    * **Orden de Capas Estricto:** La zonificación se renderiza con 38% de opacidad como velo translúcido, y el Sistema Vial con colores normativos y etiquetas centradas.
+>    * **Los paneles y los sensores normativos (círculos de 100m y 200m) se mantienen siempre en la capa superior (`PANELES_HALO_LAYER`), quedando 100% visibles y sin interferencias.**
+>
+> 3. **Selector en Interfaz Oficial (MapSwitcher):**
+>    * Sección dedicada bautizada textualmente como **"Capas MML"**.
+>    * Opciones conmutables independientes: **"Sistema Vial"** y **"Zonificación"** con checkboxes interactivos en color institucional Teal (`#0D9488`).
+>
+> 4. **Calidad de Código y Sincronización:**
+>    * Compilación TypeScript estricta con **0 errores** (`npx tsc --noEmit`).
+>    * Despliegue automático activo hacia Vercel y sincronizado con GitHub `main`.
+
+---
+
+# ██████████████████████████████████████████████████████████
+# ████                                                    ████
+# ████           MD-6  —  COMPLETADO AL 100%             ████
+# ████                                                    ████
+# ██████████████████████████████████████████████████████████
+
+
