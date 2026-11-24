@@ -881,6 +881,33 @@ export default function MapView() {
         if (src) {
           src.setData(buildPanelsGeoJSON(panelesFiltradosRef.current));
         }
+
+        // Reinstalar capas MML si estaban encendidas
+        if (useUIStore.getState().capaSistemaVialActiva) {
+          fetch('/api/capas/sistema-vial')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((geojson) => {
+              if (geojson && map.current) {
+                const vialSrc = map.current.getSource(SISTEMA_VIAL_SOURCE_ID) as maplibregl.GeoJSONSource;
+                if (vialSrc) vialSrc.setData(geojson);
+              }
+            })
+            .catch(() => {});
+        }
+
+        if (useUIStore.getState().capaZonificacionActiva && map.current) {
+          const bounds = map.current.getBounds();
+          const bboxStr = `${bounds.getWest().toFixed(4)},${bounds.getSouth().toFixed(4)},${bounds.getEast().toFixed(4)},${bounds.getNorth().toFixed(4)}`;
+          fetch(`/api/capas/zonificacion?bbox=${bboxStr}`)
+            .then((res) => (res.ok ? res.json() : null))
+            .then((geojson) => {
+              if (geojson && map.current) {
+                const zoniSrc = map.current.getSource(ZONIFICACION_SOURCE_ID) as maplibregl.GeoJSONSource;
+                if (zoniSrc) zoniSrc.setData(geojson);
+              }
+            })
+            .catch(() => {});
+        }
       }
     });
 
@@ -997,29 +1024,40 @@ export default function MapView() {
         }
       }
 
+      // Reaplicar capas MML si estaban activas
+      if (useUIStore.getState().capaSistemaVialActiva) {
+        fetch('/api/capas/sistema-vial')
+          .then((res) => (res.ok ? res.json() : null))
+          .then((geojson) => {
+            if (geojson && map.current) {
+              const vialSrc = map.current.getSource(SISTEMA_VIAL_SOURCE_ID) as maplibregl.GeoJSONSource;
+              if (vialSrc) vialSrc.setData(geojson);
+            }
+          })
+          .catch(() => {});
+      }
+
+      if (useUIStore.getState().capaZonificacionActiva && map.current) {
+        const bounds = map.current.getBounds();
+        const bboxStr = `${bounds.getWest().toFixed(4)},${bounds.getSouth().toFixed(4)},${bounds.getEast().toFixed(4)},${bounds.getNorth().toFixed(4)}`;
+        fetch(`/api/capas/zonificacion?bbox=${bboxStr}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((geojson) => {
+            if (geojson && map.current) {
+              const zoniSrc = map.current.getSource(ZONIFICACION_SOURCE_ID) as maplibregl.GeoJSONSource;
+              if (zoniSrc) zoniSrc.setData(geojson);
+            }
+          })
+          .catch(() => {});
+      }
+
       setMapReady(true);
     };
 
-    let reloaded = false;
-    const handleReady = () => {
-      if (reloaded) return;
-      reloaded = true;
-      reapplyAllData();
-    };
-
     map.current.setStyle(styleDefinition as any);
-    map.current.once('style.load', handleReady);
-    map.current.once('styledata', () => {
-      if (map.current?.isStyleLoaded()) handleReady();
+    map.current.once('style.load', () => {
+      reapplyAllData();
     });
-
-    const timer = setTimeout(() => {
-      if (!reloaded && map.current?.isStyleLoaded()) {
-        handleReady();
-      }
-    }, 200);
-
-    return () => clearTimeout(timer);
   }, [mapStyle, addSourceAndLayers, setupMapInteractions]);
 
   // 5. FlyTo (volar suavemente hacia una coordenada)

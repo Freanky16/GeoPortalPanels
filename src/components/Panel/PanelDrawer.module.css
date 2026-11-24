@@ -73,8 +73,8 @@
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: rgba(26, 115, 232, 0.1);
-  color: #1A73E8;
+  background: rgba(13, 148, 136, 0.12);
+  color: #0D9488;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,7 +133,7 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #1A73E8;
+  color: #0D9488;
   border-bottom: 1px solid var(--border-color, #E2E8F0);
   padding-bottom: 6px;
   margin: 0;
@@ -183,8 +183,8 @@
 }
 
 .input:focus, .select:focus, .textarea:focus {
-  border-color: #1A73E8;
-  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
 }
 
 .inputError {
@@ -230,8 +230,8 @@
   gap: 8px;
   padding: 8px 12px;
   border-radius: 6px;
-  border: 1px solid #1A73E8;
-  background: #1A73E8;
+  border: 1px solid #0D9488;
+  background: #0D9488;
   color: #FFFFFF;
   font-size: 12px;
   font-weight: 700;
@@ -240,8 +240,8 @@
 }
 
 .mapCaptureBtn:hover {
-  background: #1557B0;
-  border-color: #1557B0;
+  background: #0F766E;
+  border-color: #0F766E;
 }
 
 .mapCaptureBtnActive {

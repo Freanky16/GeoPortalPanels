@@ -316,7 +316,7 @@ export default function ImportarPanelesModal({ isOpen, onClose }: ImportarPanele
               <strong>Haz clic para seleccionar o arrastra un archivo</strong>
               <span>Soporta Microsoft Excel (.xlsx, .xls) y Google Earth (.kml)</span>
             </div>
-            {file && <div className={styles.fileNameBadge}>📄 {file.name}</div>}
+            {file && <div className={styles.fileNameBadge}>{file.name}</div>}
           </div>
 
           {isProcessing && <div className={styles.statusMsg}>Analizando y validando estructura cartográfica...</div>}
@@ -324,7 +324,7 @@ export default function ImportarPanelesModal({ isOpen, onClose }: ImportarPanele
           {errores.length > 0 && (
             <div className={styles.errorBox}>
               {errores.map((err, i) => (
-                <div key={i}>⚠️ {err}</div>
+                <div key={i}>{err}</div>
               ))}
             </div>
           )}
@@ -332,7 +332,7 @@ export default function ImportarPanelesModal({ isOpen, onClose }: ImportarPanele
           {filasValidas.length > 0 && !uploadSuccess && (
             <div className={styles.previewBox}>
               <div className={styles.previewSummary}>
-                ✅ <strong>{filasValidas.length} paneles listos</strong> para sincronización con Supabase.
+                <strong>{filasValidas.length} paneles listos</strong> para sincronización con la base de datos.
               </div>
               <div className={styles.previewList}>
                 {filasValidas.slice(0, 5).map((f, i) => (
@@ -352,7 +352,7 @@ export default function ImportarPanelesModal({ isOpen, onClose }: ImportarPanele
 
           {uploadSuccess && (
             <div className={styles.successBox}>
-              🎉 ¡Importación completada! Los paneles se han sincronizado con la base de datos oficial.
+              Importación completada. Los paneles se han sincronizado con la base de datos oficial.
             </div>
           )}
         </div>

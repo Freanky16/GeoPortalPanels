@@ -467,7 +467,7 @@ export default function PanelDrawer() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {conflictosProximidad.slice(0, 3).map((c) => (
                     <div key={c.panel.id} className={styles.conflictItem}>
-                      ⚠️ Panel {c.panel.codigo} ({c.panel.empresa || 'Sin empresa'}): a solo <strong>{c.distancia} metros</strong> (Distancia requerida: {c.radioMinimoRequerido} m)
+                      Panel {c.panel.codigo} ({c.panel.empresa || 'Sin empresa'}): a solo <strong>{c.distancia} metros</strong> (Distancia requerida: {c.radioMinimoRequerido} m)
                     </div>
                   ))}
                 </div>
