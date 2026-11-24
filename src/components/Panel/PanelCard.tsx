@@ -36,9 +36,9 @@ export default function PanelCard() {
             <button
               onClick={() => abrirDrawerEditarPanel(panel)}
               style={{
-                background: 'rgba(26, 115, 232, 0.1)',
-                border: '1px solid #1A73E8',
-                color: '#1A73E8',
+                background: 'rgba(13, 148, 136, 0.1)',
+                border: '1px solid #0D9488',
+                color: '#0D9488',
                 borderRadius: '6px',
                 padding: '4px 8px',
                 fontSize: '11px',
@@ -134,8 +134,8 @@ export default function PanelCard() {
                 fontWeight: 700,
                 textDecoration: 'none',
                 textAlign: 'center',
-                background: '#1A73E8',
-                borderColor: '#1A73E8',
+                background: '#0D9488',
+                borderColor: '#0D9488',
                 color: '#FFFFFF',
                 display: 'flex',
                 alignItems: 'center',
@@ -169,9 +169,9 @@ export default function PanelCard() {
                 justifyContent: 'center',
                 gap: 6,
                 transition: 'all 0.15s ease',
-                background: mostrarRadio100m ? 'rgba(26, 115, 232, 0.15)' : 'transparent',
-                borderColor: mostrarRadio100m ? '#1A73E8' : 'var(--border-color)',
-                color: mostrarRadio100m ? '#1A73E8' : 'var(--text-secondary)',
+                background: mostrarRadio100m ? 'rgba(13, 148, 136, 0.15)' : 'transparent',
+                borderColor: mostrarRadio100m ? '#0D9488' : 'var(--border-color)',
+                color: mostrarRadio100m ? '#0D9488' : 'var(--text-secondary)',
               }}
               title="Verificar zona de restricción de 100 metros según Ordenanza MML"
             >

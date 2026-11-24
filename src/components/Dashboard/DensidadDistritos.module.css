@@ -116,13 +116,13 @@
 }
 
 .distritoItem:hover {
-  background: rgba(16, 185, 129, 0.06);
-  border-color: rgba(16, 185, 129, 0.25);
+  background: rgba(13, 148, 136, 0.06);
+  border-color: rgba(13, 148, 136, 0.25);
 }
 
 .distritoItemSelected {
-  background: rgba(16, 185, 129, 0.12);
-  border-color: #10B981;
+  background: rgba(13, 148, 136, 0.12);
+  border-color: #0D9488;
 }
 
 .metaRow {
@@ -226,4 +226,3 @@
   font-size: 12px;
   font-weight: 600;
 }
-

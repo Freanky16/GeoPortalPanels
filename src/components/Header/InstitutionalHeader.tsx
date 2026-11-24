@@ -10,6 +10,7 @@ import { Panel } from '@/types';
 import * as XLSX from 'xlsx';
 import { ESTADO_LABELS } from '@/lib/constants';
 import AccesoTecnicoModal from '../Auth/AccesoTecnicoModal';
+import ImportarPanelesModal from '../Panel/ImportarPanelesModal';
 
 export default function InstitutionalHeader() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -17,6 +18,7 @@ export default function InstitutionalHeader() {
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [coordNotFound, setCoordNotFound] = useState(false);
+  const [modalImportarOpen, setModalImportarOpen] = useState(false);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
 
   // Stores
@@ -263,6 +265,72 @@ export default function InstitutionalHeader() {
 
     const fechaHoy = new Date().toISOString().slice(0, 10);
     XLSX.writeFile(workbook, `reporte_paneles_mml_${fechaHoy}.xlsx`);
+    setShowToolsMenu(false);
+  };
+
+  // Exportar paneles filtrados a formato KML (Google Earth / GIS)
+  const handleExportKML = () => {
+    if (!panelesFiltrados.length) return;
+
+    const fechaHoy = new Date().toISOString().slice(0, 10);
+    const escapeXml = (unsafe: any) => {
+      if (unsafe == null) return '';
+      return String(unsafe)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    };
+
+    const placemarks = panelesFiltrados.map((p) => {
+      const codigo = escapeXml(p.codigo);
+      const empresa = escapeXml(p.empresa || 'Sin empresa');
+      const distrito = escapeXml(p.distrito || 'Sin distrito');
+      const direccion = escapeXml(p.direccion || 'Sin dirección');
+      const tipoEPE = escapeXml(p.tipoEPE || 'Sin tipo');
+      const estado = escapeXml((ESTADO_LABELS[p.estadoContrato] || p.estadoContrato || 'Sin dato').toUpperCase());
+
+      return `
+    <Placemark>
+      <name>${codigo}</name>
+      <Snippet maxLines="1">${empresa} · ${distrito}</Snippet>
+      <description><![CDATA[
+        <div style="font-family:sans-serif;font-size:12px;line-height:1.4;">
+          <h3 style="margin:0 0 6px 0;color:#0D9488;">${codigo}</h3>
+          <p><strong>Empresa:</strong> ${empresa}<br/>
+          <strong>Distrito:</strong> ${distrito}<br/>
+          <strong>Dirección:</strong> ${direccion}<br/>
+          <strong>Tipo EPE:</strong> ${tipoEPE}<br/>
+          <strong>Estado Legal:</strong> ${estado}</p>
+          <hr style="border:none;border-top:1px solid #ccc;"/>
+          <small style="color:#666;">Geoportal de Publicidad Exterior (SIGPE) - MML</small>
+        </div>
+      ]]></description>
+      <Point>
+        <coordinates>${p.longitud},${p.latitud},0</coordinates>
+      </Point>
+    </Placemark>`;
+    }).join('\n');
+
+    const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Paneles_Publicitarios_MML_${fechaHoy}</name>
+    <description>Exportación oficial del Geoportal de Publicidad Exterior de Lima (SIGPE)</description>
+    ${placemarks}
+  </Document>
+</kml>`;
+
+    const blob = new Blob([kmlContent], { type: 'application/vnd.google-earth.kml+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `paneles_mml_${fechaHoy}.kml`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
     setShowToolsMenu(false);
   };
 
@@ -620,6 +688,33 @@ export default function InstitutionalHeader() {
               <span>Exportar Excel 22 col. (.xlsx)</span>
             </button>
 
+            {/* Herramienta 2.5: Exportar KML */}
+            <button className={styles.dropdownItem} onClick={handleExportKML}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="12 2 19 21 12 17 5 21 12 2" />
+              </svg>
+              <span>Exportar KML (Google Earth)</span>
+            </button>
+
+            {/* Herramienta Especial Gestor: Importar Excel / KML */}
+            {esGestor && (
+              <button
+                className={styles.dropdownItem}
+                onClick={() => {
+                  setModalImportarOpen(true);
+                  setShowToolsMenu(false);
+                }}
+                style={{ background: '#F0FDFA', color: '#0D9488', fontWeight: 700 }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <span>Importar Paneles (Excel / KML)</span>
+              </button>
+            )}
+
             {/* Herramienta 3: Actualizar */}
             <button
               className={styles.dropdownItem}
@@ -659,6 +754,12 @@ export default function InstitutionalHeader() {
       <AccesoTecnicoModal
         isOpen={modalTecnicoAbierto}
         onClose={() => setModalTecnicoAbierto(false)}
+      />
+
+      {/* Modal de Importación Masiva (Excel / KML) para Gestor */}
+      <ImportarPanelesModal
+        isOpen={modalImportarOpen}
+        onClose={() => setModalImportarOpen(false)}
       />
     </header>
   );

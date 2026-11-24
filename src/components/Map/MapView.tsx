@@ -293,9 +293,9 @@ export default function MapView() {
         type: 'line',
         source: DISTRITOS_SOURCE_ID,
         paint: {
-          'line-color': '#0284C7',
-          'line-width': 2.5,
-          'line-opacity': 0.9,
+          'line-color': '#0F766E', // Tono Slate Teal / Verde Marino oscuro formal, no chillón
+          'line-width': 2.2,
+          'line-opacity': 0.85,
         },
         filter: ['in', 'distrito', ''],
       });
@@ -755,7 +755,7 @@ export default function MapView() {
               });
             }
           })
-          .catch(() => {});
+          .catch(() => { });
 
         return;
       }
@@ -852,7 +852,7 @@ export default function MapView() {
       center: INITIAL_VIEW.center,
       zoom: INITIAL_VIEW.zoom,
       maxZoom: 19,
-      minZoom: 8,
+      minZoom: 3, // Permite alejar el mapa a escala de todo el Perú y continente
       attributionControl: false,
     });
 

@@ -92,7 +92,7 @@
 }
 
 .statCard:hover {
-  border-color: var(--border-focus);
+  border-color: #0D9488;
 }
 
 .statValue {

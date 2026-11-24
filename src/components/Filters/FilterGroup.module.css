@@ -29,16 +29,6 @@
   gap: 6px;
 }
 
-/* Indicador de sección */
-.groupTitle::before {
-  content: '';
-  display: inline-block;
-  width: 3px;
-  height: 12px;
-  background: var(--accent2);
-  border-radius: 2px;
-}
-
 .toggleIcon {
   color: var(--text-muted);
   transition: transform var(--transition-fast);
